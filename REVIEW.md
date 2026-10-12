@@ -1,0 +1,40 @@
+# REVIEW.md
+
+## Starter Code Defects and Code Review Findings
+
+Below is the list of defects identified in the starter `app/main.py` across helper functions and endpoint implementations.
+
+| # | Where (function / line) | What is wrong | How you'd notice it (test, input, or symptom) | How you fixed it |
+|---|---|---|---|---|
+| 1 | `compute_late_minutes` (lines 33-38) | Grace period comparison uses strict inequality on integer minutes (`minutes if minutes > 10 else 0`). | For a 09:30 shift, punch-in at 09:40:01 (601 seconds elapsed) yields `minutes = 10`. `10 > 10` is False, returning 0 late minutes. Per R2, punch-in strictly after 10:00 grace must return 10 minutes. | Checked `(punch_in - shift_start).total_seconds() > 600`. When True, computed `int(total_seconds // 60)`. |
+| 2 | `compute_late_minutes` (lines 33-38) | Shift start replacement is timezone-unaware. Replaces hour/minute directly on `punch_in`. | If `punch_in` is UTC (e.g. 04:00Z for 09:30 IST), replacing hour with 9 creates 09:00 UTC, causing a 5.5-hour skew. | Converted instants to IST, anchored shift start to the correct attendance date, and calculated elapsed seconds. |
+| 3 | `compute_late_minutes` & `compute_work_hours` (lines 33-42) | Sub-second fractions (microseconds) were not truncated before calculation. | Punch-in at 09:40:00.900 IST results in 600.9s > 600s, counting as late. Per R1, instants must be truncated to whole seconds. | Truncated epoch milliseconds to whole seconds (`ms // 1000 * 1000`) and set microsecond=0. |
+| 4 | `compute_work_hours` (lines 40-42) | Python built-in `round()` uses banker's rounding (round half to even) instead of half-up rounding. | Work duration resulting in 1.125 hours rounds to 1.12 instead of 1.13. R4 explicitly requires 2 decimals half-up. | Converted difference in seconds to `Decimal` and quantized using `ROUND_HALF_UP`. |
+| 5 | `compute_overtime` (lines 44-48) | Missing 30-minute qualification threshold (`max(0, minutes)`). | A punch-out 5 minutes after shift end returns 5 minutes overtime instead of 0. R3 states overtime is counted only if >= 30 minutes; otherwise 0. | Added check: `if diff_seconds >= 1800` then `int(diff_seconds // 60)` else `0`. |
+| 6 | `compute_overtime` (lines 44-48) | Shift end is anchored to attendance date even for overnight shifts. | For overnight shift 22:00-06:00 on 2026-07-06, anchors shift end at 2026-07-06 06:00 IST (16h before shift start), yielding ~24h false overtime. | For overnight shifts (`shift_end <= shift_start`), anchored shift end to the next calendar day (`att_date + 1 day`). |
+| 7 | `GET /health` (lines 72-74) | Unconditionally returns 200 without testing database connectivity. | Terminate MongoDB or supply invalid `MONGO_URI`; `/health` still returns 200 `{"status": "ok"}` instead of 503. | Added `client.admin.command('ping')` inside a try/except block; raises HTTP 503 on failure. |
+| 8 | `POST /employees` (lines 77-86) | Check-then-insert race condition for unique `emp_code`. | Concurrent requests with the same `emp_code` both pass `find_one` and attempt insertion, causing unhandled 500s or duplicate records. | Created a unique index on `emp_code` at startup and caught `DuplicateKeyError` to return HTTP 409. |
+| 9 | `POST /employees` (lines 77-86) | `created_at` stored as naive local datetime and returned without conversion to epoch milliseconds. | `POST /employees` returns an ISO string or datetime object instead of integer epoch milliseconds (`EpochMillis`). | Stored UTC datetime in MongoDB and returned integer epoch milliseconds in the API response. |
+| 10 | `POST /employees` (lines 53-61, 77-86) | Missing validation that `shift_start != shift_end` and missing field format constraints. | Payload with `shift_start: "09:30"` and `shift_end: "09:30"` succeeds with 201 instead of 422. Missing `emp_code` regex validation (`^EMP\d{4,6}$`). | Added Pydantic field validators enforcing `shift_start != shift_end` and regex/length constraints. |
+| 11 | `GET /employees` (lines 88-96) | Pagination offset calculation off-by-one bug: `skip = page * page_size`. | `GET /employees?page=1&page_size=20` sets `skip = 20`, completely skipping the first 20 records. | Corrected pagination formula to `skip = (page - 1) * page_size`. |
+| 12 | `GET /employees` (lines 88-96) | `total` ignores query filters (`count_documents({})`), and sorting by `emp_code` ascending is missing. | `GET /employees?department=Engineering` returns total count of all employees across all departments, violating R10. Items are unsorted. | Changed to `db.employees.count_documents(q)` and added `.sort("emp_code", ASCENDING)`. |
+| 13 | `POST /attendance/punch-in` (lines 99-122) | Missing 404 check for non-existent employee; throws unhandled 500. | `POST /attendance/punch-in` with unknown `emp_code: "EMP0000"` yields `TypeError: 'NoneType' object is not subscriptable` on `emp["shift_start"]`. | Added check: `if emp is None: raise HTTPException(404, "Employee not found")`. |
+| 14 | `POST /attendance/punch-in` (lines 99-122) | Check-then-insert race condition on `(emp_code, date)` allows duplicate punch-ins under concurrency. | Firing concurrent duplicate punch-in requests yields duplicate records or unhandled 500. | Created unique compound index `[("emp_code", 1), ("date", 1)]` and caught `DuplicateKeyError` to return HTTP 409. |
+| 15 | `POST /attendance/punch-in` (lines 99-122) | Attendance date calculation uses local date string (`ts.date().isoformat()`), ignoring overnight shifts and timezone. | For overnight shift 22:00-06:00, punch-in at 05:45 IST on July 7 is recorded as date `2026-07-07` instead of `2026-07-06` (R1). | Computed attendance date in IST using `get_attendance_date_and_shifts` per R1. |
+| 16 | `POST /attendance/punch-in` & `GET /attendance` (lines 119, 149) | Injects unauthorized `id` string field into attendance response objects (`doc["id"] = str(res.inserted_id)`). | Attendance record response contains `"id": "..."`. Contract specifies records have no ID (addressed by `emp_code` and `date`). | Stripped `_id` without adding an `id` field, strictly conforming to the `AttendanceRecord` schema. |
+| 17 | `GET /attendance` (lines 124-151) | In-memory fetch and sort (`list(db.attendance_logs.find(q))` followed by Python `sort()`). Secondary sort missing. | On a collection of ~100,000 records, fetching the full dataset into Python memory exhausts server RAM and causes timeouts. | Replaced with index-backed MongoDB cursor: `.sort([("date", DESCENDING), ("emp_code", ASCENDING)]).skip(skip).limit(page_size)`. |
+| 18 | `GET /attendance` (lines 124-151) | Missing date range validation (`date_from > date_to`). | `GET /attendance?date_from=2026-07-10&date_to=2026-07-01` returns 200 with an empty list instead of 422. | Added check: `if date_from and date_to and date_from > date_to: raise HTTPException(422)`. |
+| 19 | Datetime handling boundary (PyMongo) | PyMongo returns naive UTC datetimes by default. Comparing naive and aware datetimes in Python raises `TypeError`. | Calling punch-out raises `TypeError: can't compare offset-naive and offset-aware datetimes`. | Instantiated `MongoClient` with `tz_aware=True` and added `ensure_utc` helper to ensure all datetimes are UTC-aware. |
+
+---
+
+## What Was Examined and Decided Was Not a Defect
+
+1. **IST Timezone Definition (`IST = timezone(timedelta(hours=5, minutes=30))`):**
+   India Standard Time does not observe Daylight Saving Time (DST). A constant offset of UTC+05:30 throughout the year is exact and correct.
+
+2. **Absence of Synthetic IDs on Attendance Records:**
+   Addressing attendance documents by the natural composite key `(emp_code, date)` without a synthetic primary key in the HTTP API is intentional and matches the domain requirements defined in `DATA_MODEL.md` and `openapi.yaml`.
+
+3. **Status Values for Punch-In:**
+   Only `PRESENT`, `WFH`, and `ON_DUTY` can be punched in by an employee. `ABSENT` and `LEAVE` cannot be created via the punch-in endpoint, which matches both operational semantics and the OpenAPI contract.
