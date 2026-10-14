@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HROne - Real-Time Attendance & Analytics Dashboard</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+    .pulse-animation {
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col font-sans">
+  <!-- Top Navigation -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="h-9 w-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+        HR
+      </div>
+      <div>
+        <h1 class="text-base font-semibold text-white tracking-tight flex items-center gap-2">
+          HROne Attendance & Analytics
+          <span class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">v2.0</span>
+        </h1>
+        <p class="text-xs text-slate-400">Real-Time FastApi + MongoDB 7.0 Engine</p>
+      </div>
+    </div>
+
+    <!-- Live Status & Controls -->
+    <div class="flex items-center gap-4 flex-wrap">
+      <div id="liveClock" class="text-xs font-mono bg-slate-800 border border-slate-700/60 px-3 py-1.5 rounded-md text-slate-300">
+        IST: Loading...
+      </div>
+      <div id="healthBadge" class="flex items-center gap-2 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+        <span class="h-2 w-2 rounded-full bg-emerald-400 pulse-animation"></span>
+        <span id="healthText">MongoDB: Connected</span>
+      </div>
+      <button id="refreshBtn" onclick="refreshDashboard()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-md transition flex items-center gap-1.5 active:scale-95">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Refresh
+      </button>
+      <div class="flex items-center gap-1.5 bg-slate-800/80 px-2 py-1 rounded border border-slate-700 text-xs">
+        <span class="text-slate-400">API:</span>
+        <input id="apiBase" type="text" value="http://127.0.0.1:8000" class="bg-transparent text-slate-200 outline-none w-44 font-mono text-xs">
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+    <!-- Quick Metric Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>TOTAL EMPLOYEES</span>
+          <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-white" id="statEmployees">--</div>
+        <p class="text-xs text-slate-500 mt-1">Across 3 Active Departments</p>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>LOGGED RECORDS</span>
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-emerald-400" id="statLogs">--</div>
+        <p class="text-xs text-slate-500 mt-1">Indexed by (emp_code, date)</p>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>LATE MINUTES (MONTH)</span>
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-amber-400" id="statLateMins">--</div>
+        <p class="text-xs text-slate-500 mt-1">Grace rule: strict &gt; 10:00</p>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>OVERTIME TOTAL</span>
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-cyan-400" id="statOvertime">--</div>
+        <p class="text-xs text-slate-500 mt-1">Threshold: &ge; 30 min counted</p>
+      </div>
+    </section>
+
+    <!-- Interactive Punch-in / Punch-out Terminal & Action Hub -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Punch Terminal Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+            Real-Time Punch Terminal
+          </h2>
+          <span class="text-xs text-slate-400">R1, R2, R3, R4</span>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Select Employee</label>
+            <select id="punchEmpCode" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-indigo-500">
+              <option value="EMP0001">EMP0001 - Asha Rao (Engineering)</option>
+              <option value="EMP0002">EMP0002 - Vikram Mehta (Engineering)</option>
+              <option value="EMP0003">EMP0003 - Neha Iyer (Sales)</option>
+              <option value="EMP0004">EMP0004 - Rahul Sharma (Sales)</option>
+              <option value="EMP0005">EMP0005 - Priya Nair (Support, Overnight)</option>
+              <option value="EMP0006">EMP0006 - Aman Verma (Support)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Status</label>
+              <select id="punchStatus" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-indigo-500">
+                <option value="PRESENT">PRESENT</option>
+                <option value="WFH">WFH</option>
+                <option value="ON_DUTY">ON_DUTY</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Custom Time (Optional)</label>
+              <input id="punchCustomTime" type="datetime-local" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <div class="pt-2 grid grid-cols-2 gap-3">
+            <button onclick="handlePunchIn()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 px-4 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+              Punch In (201)
+            </button>
+            <button onclick="handlePunchOut()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              Punch Out (200)
+            </button>
+          </div>
+
+          <div id="punchResult" class="hidden mt-3 p-3 rounded-lg text-xs font-mono bg-slate-800/80 border border-slate-700 text-slate-300">
+          </div>
+        </div>
+      </div>
+
+      <!-- Department Summary Card -->
+      <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+              Department Monthly Summary (Aggregation)
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">R9 Headcount (includes zero logs) &bull; Mean work hours over records</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="summaryMonth" type="month" value="2026-07" onchange="loadDepartmentSummary()" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 outline-none">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-800/60 uppercase font-semibold text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="py-2.5 px-3">Department</th>
+                <th class="py-2.5 px-3 text-center">Headcount</th>
+                <th class="py-2.5 px-3 text-center">Present Days</th>
+                <th class="py-2.5 px-3 text-center">Avg Work Hrs</th>
+                <th class="py-2.5 px-3 text-center">Late Count</th>
+                <th class="py-2.5 px-3 text-center">Late Mins</th>
+                <th class="py-2.5 px-3 text-center">Leave</th>
+                <th class="py-2.5 px-3 text-center">On Duty</th>
+              </tr>
+            </thead>
+            <tbody id="deptSummaryTableBody" class="divide-y divide-slate-800">
+              <tr><td colspan="8" class="text-center py-4 text-slate-500">Loading summary...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Department Trend Visualization with Moving Average & Gap Densification -->
+    <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-cyan-500"></span>
+            Daily Department Trend & 7-Day Moving Average
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">MongoDB <code class="text-cyan-300 font-mono">$densify</code> calendar gap-filling &bull; <code class="text-cyan-300 font-mono">$setWindowFields</code> rolling 7-day average</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <select id="trendDept" onchange="loadDepartmentTrend()" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none">
+            <option value="Engineering">Engineering</option>
+            <option value="Sales">Sales</option>
+            <option value="Support">Support</option>
+          </select>
+          <div class="flex items-center gap-1.5 text-xs text-slate-400">
+            <span>From:</span>
+            <input id="trendFrom" type="date" value="2026-07-01" onchange="loadDepartmentTrend()" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200">
+            <span>To:</span>
+            <input id="trendTo" type="date" value="2026-07-15" onchange="loadDepartmentTrend()" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200">
+          </div>
+        </div>
+      </div>
+
+      <!-- Trend Canvas Chart -->
+      <div class="relative bg-slate-950/70 border border-slate-800/80 rounded-xl p-4">
+        <canvas id="trendChart" height="90" class="w-full"></canvas>
+        <div id="chartLegend" class="flex items-center justify-center gap-6 mt-3 text-xs text-slate-400">
+          <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-indigo-500/60 inline-block"></span> Attendance Rate</div>
+          <div class="flex items-center gap-2"><span class="h-1 w-4 bg-cyan-400 inline-block rounded"></span> 7-Day Moving Avg</div>
+          <div class="flex items-center gap-2"><span class="h-3 w-3 bg-slate-800/50 inline-block border border-dashed border-slate-700"></span> Weekend (No Rate)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Late-Comers Leaderboard (Competition Ranking) & Index Explain Viewer -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Leaderboard Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+              <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+              Late-Comers Leaderboard
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Standard Competition Ranking (1, 2, 2, 4) &bull; Ties share rank</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="lbLimit" onchange="loadLeaderboard()" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+              <option value="5">Top 5</option>
+              <option value="10" selected>Top 10</option>
+              <option value="20">Top 20</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-800/60 uppercase font-semibold text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="py-2.5 px-3">Rank</th>
+                <th class="py-2.5 px-3">Employee</th>
+                <th class="py-2.5 px-3">Department</th>
+                <th class="py-2.5 px-3 text-right">Total Late Mins</th>
+                <th class="py-2.5 px-3 text-right">Late Count</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardTableBody" class="divide-y divide-slate-800">
+              <tr><td colspan="5" class="text-center py-4 text-slate-500">Loading leaderboard...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Explain & Index Plan Inspector -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+              <span class="h-2 w-2 rounded-full bg-violet-500"></span>
+              MongoDB Index & Explain Inspector
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5"><code class="text-violet-300 font-mono">/admin/explain/{endpoint}</code> &bull; ExecutionStats Verification</p>
+          </div>
+          <select id="explainEndpointSelect" onchange="runExplain()" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+            <option value="attendance_list">attendance_list</option>
+            <option value="employee_monthly">employee_monthly</option>
+            <option value="department_summary">department_summary</option>
+            <option value="late_leaderboard">late_leaderboard</option>
+            <option value="department_trend">department_trend</option>
+          </select>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2">
+          <div class="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400">Target Collection:</span>
+              <span id="explainCollection" class="font-mono text-indigo-400 font-semibold">--</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400">Winning Plan Stage:</span>
+              <span id="explainStage" class="font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">IXSCAN</span>
+            </div>
+          </div>
+          <div class="text-[11px] font-mono text-slate-300 max-h-56 overflow-y-auto whitespace-pre-wrap p-2 bg-slate-900 rounded" id="explainJson">
+            Select an endpoint to inspect raw MongoDB explain execution plan...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Attendance Records & Regularization History Log -->
+    <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+            Attendance Records & Regularization Audit Trail
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Paginated live attendance &bull; Audit entries record who, when, why, and changes</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="openRegularizeModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg transition font-medium">
+            + Regularize Record
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-800/60 uppercase font-semibold text-slate-400 border-b border-slate-800">
+            <tr>
+              <th class="py-2.5 px-3">Date</th>
+              <th class="py-2.5 px-3">Emp Code</th>
+              <th class="py-2.5 px-3">Status</th>
+              <th class="py-2.5 px-3">Punch In</th>
+              <th class="py-2.5 px-3">Punch Out</th>
+              <th class="py-2.5 px-3 text-center">Work Hrs</th>
+              <th class="py-2.5 px-3 text-center">Late</th>
+              <th class="py-2.5 px-3 text-center">Overtime</th>
+              <th class="py-2.5 px-3 text-center">Half Day</th>
+              <th class="py-2.5 px-3">Audit Trail</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTableBody" class="divide-y divide-slate-800">
+            <tr><td colspan="10" class="text-center py-4 text-slate-500">Loading records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Regularize Modal -->
+  <div id="regularizeModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-semibold text-white">Regularize (Correct) Attendance Record</h3>
+        <button onclick="closeRegularizeModal()" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Employee Code</label>
+            <input id="regEmpCode" type="text" value="EMP0001" class="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Attendance Date (YYYY-MM-DD)</label>
+            <input id="regDate" type="date" value="2026-07-06" class="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-slate-200">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">New Punch In (Epoch ms or leave empty)</label>
+            <input id="regPunchIn" type="number" placeholder="e.g. 1783310400000" class="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-slate-200 font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">New Punch Out (Epoch ms or leave empty)</label>
+            <input id="regPunchOut" type="number" placeholder="e.g. 1783429800000" class="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-slate-200 font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Regularized By</label>
+          <input id="regBy" type="text" value="hr.lead" class="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-slate-200">
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Reason (min 5 chars)</label>
+          <input id="regReason" type="text" value="Biometric scan latency correction" class="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-slate-200">
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="closeRegularizeModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs">Cancel</button>
+        <button onclick="submitRegularization()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-medium">Submit Correction</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="border-t border-slate-800/80 bg-slate-900/60 px-6 py-4 text-center text-xs text-slate-500 mt-auto">
+    HROne Engineering Assignment &bull; Real-time Attendance & Analytics &bull; Designed for high-scale enterprise operations
+  </footer>
+
+  <script>
+    function getApiBase() {
+      return document.getElementById('apiBase').value.replace(/\/$/, '');
+    }
+
+    function updateClock() {
+      const now = new Date();
+      // IST is UTC + 5:30
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const istDate = new Date(utc + (3600000 * 5.5));
+      document.getElementById('liveClock').innerText = 'IST: ' + istDate.toLocaleString('en-IN', {
+        hour12: false,
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        year: 'numeric', month: 'short', day: 'numeric'
+      });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    async function checkHealth() {
+      try {
+        const res = await fetch(`${getApiBase()}/health`);
+        if (res.ok) {
+          document.getElementById('healthBadge').className = 'flex items-center gap-2 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400';
+          document.getElementById('healthText').innerText = 'MongoDB: Connected';
+        } else {
+          throw new Error('503 Service Unavailable');
+        }
+      } catch (e) {
+        document.getElementById('healthBadge').className = 'flex items-center gap-2 text-xs font-medium px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400';
+        document.getElementById('healthText').innerText = 'MongoDB: Disconnected';
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const [empRes, attRes] = await Promise.all([
+          fetch(`${getApiBase()}/employees`),
+          fetch(`${getApiBase()}/attendance`)
+        ]);
+        if (empRes.ok) {
+          const empData = await empRes.json();
+          document.getElementById('statEmployees').innerText = empData.total || empData.items.length;
+        }
+        if (attRes.ok) {
+          const attData = await attRes.json();
+          document.getElementById('statLogs').innerText = attData.total || attData.items.length;
+          
+          let totalLate = 0;
+          let totalOt = 0;
+          (attData.items || []).forEach(d => {
+            totalLate += (d.late_minutes || 0);
+            totalOt += (d.overtime_minutes || 0);
+          });
+          document.getElementById('statLateMins').innerText = totalLate + 'm';
+          document.getElementById('statOvertime').innerText = totalOt + 'm';
+        }
+      } catch (e) {
+        console.error('Stats loading error:', e);
+      }
+    }
+
+    async function loadDepartmentSummary() {
+      const month = document.getElementById('summaryMonth').value || '2026-07';
+      const tbody = document.getElementById('deptSummaryTableBody');
+      try {
+        const res = await fetch(`${getApiBase()}/analytics/departments/summary?month=${month}`);
+        if (!res.ok) throw new Error('Failed to fetch department summary');
+        const data = await res.json();
+        if (!data.items || data.items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-slate-500">No departments found for month</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.items.map(d => `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-2.5 px-3 font-medium text-white flex items-center gap-2">
+              <span class="h-2 w-2 rounded-full ${d.department === 'Engineering' ? 'bg-indigo-400' : d.department === 'Sales' ? 'bg-emerald-400' : 'bg-cyan-400'}"></span>
+              ${d.department}
+            </td>
+            <td class="py-2.5 px-3 text-center font-semibold text-slate-200">${d.headcount}</td>
+            <td class="py-2.5 px-3 text-center text-emerald-300 font-mono">${d.present_days.toFixed(1)}</td>
+            <td class="py-2.5 px-3 text-center text-slate-200 font-mono">${d.avg_work_hours !== null ? d.avg_work_hours.toFixed(2) + 'h' : '--'}</td>
+            <td class="py-2.5 px-3 text-center ${d.late_count > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}">${d.late_count}</td>
+            <td class="py-2.5 px-3 text-center text-amber-300 font-mono">${d.total_late_minutes}m</td>
+            <td class="py-2.5 px-3 text-center text-rose-300">${d.leave_count}</td>
+            <td class="py-2.5 px-3 text-center text-blue-300">${d.on_duty_count}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-rose-400">Error: ${e.message}</td></tr>`;
+      }
+    }
+
+    async function loadDepartmentTrend() {
+      const dept = document.getElementById('trendDept').value || 'Engineering';
+      const from = document.getElementById('trendFrom').value || '2026-07-01';
+      const to = document.getElementById('trendTo').value || '2026-07-15';
+      try {
+        const res = await fetch(`${getApiBase()}/analytics/departments/${dept}/trend?from=${from}&to=${to}`);
+        if (!res.ok) throw new Error('Failed to load trend');
+        const data = await res.json();
+        renderTrendChart(data.items || []);
+      } catch (e) {
+        console.error('Trend chart error:', e);
+      }
+    }
+
+    function renderTrendChart(items) {
+      const canvas = document.getElementById('trendChart');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width = canvas.parentElement.clientWidth;
+      const height = canvas.height = 140;
+
+      ctx.clearRect(0, 0, width, height);
+
+      if (items.length === 0) return;
+
+      const paddingLeft = 40;
+      const paddingBottom = 25;
+      const chartWidth = width - paddingLeft - 20;
+      const chartHeight = height - paddingBottom - 10;
+      const stepX = chartWidth / items.length;
+
+      // Draw background weekend bands & grid
+      items.forEach((item, i) => {
+        const x = paddingLeft + i * stepX;
+        if (!item.is_working_day) {
+          ctx.fillStyle = 'rgba(30, 41, 59, 0.4)';
+          ctx.fillRect(x, 10, stepX, chartHeight);
+        }
+      });
+
+      // Draw bars for attendance_rate
+      items.forEach((item, i) => {
+        const x = paddingLeft + i * stepX + stepX * 0.15;
+        const barW = stepX * 0.7;
+        if (item.attendance_rate !== null) {
+          const barH = item.attendance_rate * chartHeight;
+          const y = 10 + (chartHeight - barH);
+          ctx.fillStyle = '#6366f1';
+          ctx.fillRect(x, y, barW, barH);
+        }
+        // Label date on x axis
+        ctx.fillStyle = item.is_working_day ? '#94a3b8' : '#64748b';
+        ctx.font = '9px monospace';
+        const dayStr = item.date.slice(8);
+        ctx.fillText(dayStr, paddingLeft + i * stepX + stepX * 0.3, height - 8);
+      });
+
+      // Draw 7-day moving average curve
+      ctx.beginPath();
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 2.5;
+      let started = false;
+      items.forEach((item, i) => {
+        if (item.moving_avg_7d !== null) {
+          const x = paddingLeft + i * stepX + stepX * 0.5;
+          const y = 10 + (chartHeight - (item.moving_avg_7d * chartHeight));
+          if (!started) {
+            ctx.moveTo(x, y);
+            started = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+      });
+      ctx.stroke();
+
+      // Draw moving average points
+      items.forEach((item, i) => {
+        if (item.moving_avg_7d !== null) {
+          const x = paddingLeft + i * stepX + stepX * 0.5;
+          const y = 10 + (chartHeight - (item.moving_avg_7d * chartHeight));
+          ctx.fillStyle = '#22d3ee';
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    async function loadLeaderboard() {
+      const month = document.getElementById('summaryMonth').value || '2026-07';
+      const limit = document.getElementById('lbLimit').value || '10';
+      const tbody = document.getElementById('leaderboardTableBody');
+      try {
+        const res = await fetch(`${getApiBase()}/analytics/leaderboard/late?month=${month}&limit=${limit}`);
+        if (!res.ok) throw new Error('Failed to load leaderboard');
+        const data = await res.json();
+        if (!data.items || data.items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-500">No late-comers for this month!</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.items.map(item => `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-2.5 px-3">
+              <span class="inline-flex items-center justify-center h-6 w-6 rounded-full font-bold text-xs ${item.rank === 1 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : item.rank === 2 ? 'bg-slate-400/20 text-slate-200 border border-slate-400/30' : 'bg-slate-800 text-slate-400'}">
+                #${item.rank}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 font-medium text-white">${item.name} <span class="text-xs text-slate-400 font-mono">(${item.emp_code})</span></td>
+            <td class="py-2.5 px-3 text-slate-300">${item.department}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-amber-400">${item.total_late_minutes} min</td>
+            <td class="py-2.5 px-3 text-right text-slate-400">${item.late_count} times</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-rose-400">Error: ${e.message}</td></tr>`;
+      }
+    }
+
+    async function loadAttendanceList() {
+      const tbody = document.getElementById('attendanceTableBody');
+      try {
+        const res = await fetch(`${getApiBase()}/attendance?page_size=15`);
+        if (!res.ok) throw new Error('Failed to load attendance records');
+        const data = await res.json();
+        if (!data.items || data.items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-slate-500">No attendance records found</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.items.map(item => {
+          const inStr = item.punch_in ? new Date(item.punch_in).toLocaleTimeString('en-IN', { hour12: false }) : '--';
+          const outStr = item.punch_out ? new Date(item.punch_out).toLocaleTimeString('en-IN', { hour12: false }) : '--';
+          const histCount = (item.history || []).length;
+          return `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="py-2.5 px-3 font-mono text-slate-300">${item.date}</td>
+              <td class="py-2.5 px-3 font-bold text-white">${item.emp_code}</td>
+              <td class="py-2.5 px-3">
+                <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${item.status === 'PRESENT' ? 'bg-emerald-500/20 text-emerald-300' : item.status === 'WFH' ? 'bg-cyan-500/20 text-cyan-300' : item.status === 'ON_DUTY' ? 'bg-blue-500/20 text-blue-300' : item.status === 'LEAVE' ? 'bg-amber-500/20 text-amber-300' : 'bg-rose-500/20 text-rose-300'}">
+                  ${item.status}
+                </span>
+              </td>
+              <td class="py-2.5 px-3 font-mono text-slate-300">${inStr}</td>
+              <td class="py-2.5 px-3 font-mono text-slate-300">${outStr}</td>
+              <td class="py-2.5 px-3 text-center font-mono text-slate-200">${item.work_hours !== null ? item.work_hours.toFixed(2) : '--'}</td>
+              <td class="py-2.5 px-3 text-center font-mono ${item.late_minutes > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'}">${item.late_minutes}m</td>
+              <td class="py-2.5 px-3 text-center font-mono ${item.overtime_minutes > 0 ? 'text-cyan-400 font-bold' : 'text-slate-500'}">${item.overtime_minutes}m</td>
+              <td class="py-2.5 px-3 text-center">${item.half_day ? '<span class="text-amber-400 font-bold">YES</span>' : '<span class="text-slate-500">NO</span>'}</td>
+              <td class="py-2.5 px-3">
+                ${histCount > 0 ? `<span class="px-2 py-0.5 rounded text-[10px] bg-indigo-500/20 text-indigo-300 font-mono">${histCount} audit edit(s)</span>` : '<span class="text-slate-600">Original</span>'}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-rose-400">Error: ${e.message}</td></tr>`;
+      }
+    }
+
+    async function handlePunchIn() {
+      const emp_code = document.getElementById('punchEmpCode').value;
+      const status = document.getElementById('punchStatus').value;
+      const customTime = document.getElementById('punchCustomTime').value;
+      const payload = { emp_code, status };
+      if (customTime) {
+        payload.punched_at = new Date(customTime).getTime();
+      }
+      const resBox = document.getElementById('punchResult');
+      resBox.classList.remove('hidden');
+      resBox.innerText = 'Submitting punch-in...';
+      try {
+        const res = await fetch(`${getApiBase()}/attendance/punch-in`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.status === 201) {
+          resBox.className = 'mt-3 p-3 rounded-lg text-xs font-mono bg-emerald-950/60 border border-emerald-700 text-emerald-300';
+          resBox.innerText = `PUNCH IN SUCCESS (201)\nDate: ${data.date}\nLate Minutes: ${data.late_minutes}m (R2)\nStatus: ${data.status}`;
+          refreshDashboard();
+        } else {
+          resBox.className = 'mt-3 p-3 rounded-lg text-xs font-mono bg-rose-950/60 border border-rose-700 text-rose-300';
+          resBox.innerText = `CONFLICT/ERROR (${res.status})\nDetail: ${data.detail || JSON.stringify(data)}`;
+        }
+      } catch (e) {
+        resBox.className = 'mt-3 p-3 rounded-lg text-xs font-mono bg-rose-950/60 border border-rose-700 text-rose-300';
+        resBox.innerText = 'Network error: ' + e.message;
+      }
+    }
+
+    async function handlePunchOut() {
+      const emp_code = document.getElementById('punchEmpCode').value;
+      const customTime = document.getElementById('punchCustomTime').value;
+      const payload = { emp_code };
+      if (customTime) {
+        payload.punched_at = new Date(customTime).getTime();
+      }
+      const resBox = document.getElementById('punchResult');
+      resBox.classList.remove('hidden');
+      resBox.innerText = 'Submitting punch-out...';
+      try {
+        const res = await fetch(`${getApiBase()}/attendance/punch-out`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.status === 200) {
+          resBox.className = 'mt-3 p-3 rounded-lg text-xs font-mono bg-emerald-950/60 border border-emerald-700 text-emerald-300';
+          resBox.innerText = `PUNCH OUT SUCCESS (200)\nWork Hours: ${data.work_hours}h (R4 half-up)\nOvertime: ${data.overtime_minutes}m (R3)\nHalf Day: ${data.half_day}`;
+          refreshDashboard();
+        } else {
+          resBox.className = 'mt-3 p-3 rounded-lg text-xs font-mono bg-rose-950/60 border border-rose-700 text-rose-300';
+          resBox.innerText = `ERROR (${res.status})\nDetail: ${data.detail || JSON.stringify(data)}`;
+        }
+      } catch (e) {
+        resBox.className = 'mt-3 p-3 rounded-lg text-xs font-mono bg-rose-950/60 border border-rose-700 text-rose-300';
+        resBox.innerText = 'Network error: ' + e.message;
+      }
+    }
+
+    async function runExplain() {
+      const endpoint = document.getElementById('explainEndpointSelect').value;
+      let params = new URLSearchParams();
+      if (endpoint === 'attendance_list') {
+        params.append('date_from', '2026-07-01');
+        params.append('date_to', '2026-07-31');
+      } else if (endpoint === 'employee_monthly') {
+        params.append('emp_code', 'EMP0001');
+        params.append('month', '2026-07');
+      } else if (endpoint === 'department_summary') {
+        params.append('month', '2026-07');
+      } else if (endpoint === 'late_leaderboard') {
+        params.append('month', '2026-07');
+      } else if (endpoint === 'department_trend') {
+        params.append('department', 'Engineering');
+        params.append('from', '2026-07-01');
+        params.append('to', '2026-07-10');
+      }
+
+      try {
+        const res = await fetch(`${getApiBase()}/admin/explain/${endpoint}?${params.toString()}`);
+        if (!res.ok) throw new Error('Explain query failed');
+        const data = await res.json();
+        document.getElementById('explainCollection').innerText = data.collection;
+        const planStr = JSON.stringify(data.explain, null, 2);
+        document.getElementById('explainJson').innerText = planStr;
+        if (planStr.includes('"IXSCAN"')) {
+          document.getElementById('explainStage').className = 'font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold';
+          document.getElementById('explainStage').innerText = 'IXSCAN (Index Scan Verified)';
+        } else {
+          document.getElementById('explainStage').className = 'font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold';
+          document.getElementById('explainStage').innerText = 'SCAN';
+        }
+      } catch (e) {
+        document.getElementById('explainJson').innerText = 'Error running explain: ' + e.message;
+      }
+    }
+
+    function openRegularizeModal() {
+      document.getElementById('regularizeModal').classList.remove('hidden');
+    }
+    function closeRegularizeModal() {
+      document.getElementById('regularizeModal').classList.add('hidden');
+    }
+
+    async function submitRegularization() {
+      const emp_code = document.getElementById('regEmpCode').value;
+      const date = document.getElementById('regDate').value;
+      const punch_in = document.getElementById('regPunchIn').value;
+      const punch_out = document.getElementById('regPunchOut').value;
+      const regularized_by = document.getElementById('regBy').value;
+      const reason = document.getElementById('regReason').value;
+
+      const body = { regularized_by, reason };
+      if (punch_in) body.punch_in = parseInt(punch_in);
+      if (punch_out) body.punch_out = parseInt(punch_out);
+
+      try {
+        const res = await fetch(`${getApiBase()}/attendance/${emp_code}/${date}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('Record regularized successfully!');
+          closeRegularizeModal();
+          refreshDashboard();
+        } else {
+          alert(`Regularization failed (${res.status}): ${data.detail || JSON.stringify(data)}`);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    function refreshDashboard() {
+      checkHealth();
+      loadStats();
+      loadDepartmentSummary();
+      loadDepartmentTrend();
+      loadLeaderboard();
+      loadAttendanceList();
+      runExplain();
+    }
+
+    // Initial load
+    refreshDashboard();
+    // Auto-refresh every 10 seconds
+    setInterval(refreshDashboard, 10000);
+  </script>
+</body>
+</html>

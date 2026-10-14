@@ -15,6 +15,7 @@ from typing import Any, List, Optional
 from bson import ObjectId
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Path, Query, status
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, field_validator
 from pymongo import ASCENDING, DESCENDING, MongoClient, ReturnDocument
 from pymongo.errors import DuplicateKeyError, PyMongoError
@@ -349,6 +350,20 @@ def health():
         return {"status": "ok"}
     except PyMongoError:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database unavailable")
+
+
+DASHBOARD_FILE = os.path.join(os.path.dirname(__file__), "dashboard.html")
+
+
+@app.get("/dashboard", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def dashboard():
+    """Real-time attendance & analytics dashboard."""
+    if os.path.exists(DASHBOARD_FILE):
+        with open(DASHBOARD_FILE, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h1>Dashboard file not found</h1>", status_code=404)
+
 
 
 @app.post("/employees", status_code=201)
