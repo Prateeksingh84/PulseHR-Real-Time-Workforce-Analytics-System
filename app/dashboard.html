@@ -598,7 +598,7 @@
         }
         if (leadRes.ok) {
           const leadJson = await leadRes.json();
-          state.leaderboard = leadJson || [];
+          state.leaderboard = Array.isArray(leadJson) ? leadJson : (leadJson.items || []);
         }
       } catch (err) {
         hydrateMockData();
@@ -990,7 +990,8 @@
 
     function renderLeaderboard() {
       const tbody = document.getElementById('leaderboardTbody');
-      const items = state.leaderboard.slice(0, 5);
+      const list = Array.isArray(state.leaderboard) ? state.leaderboard : (state.leaderboard?.items || []);
+      const items = list.slice(0, 5);
       tbody.innerHTML = items.map((r, i) => `
         <tr class="hover:bg-slate-800/40 transition">
           <td class="py-2 font-bold ${i === 0 ? 'text-amber-400' : 'text-slate-400'}">#${r.rank || (i + 1)}</td>
