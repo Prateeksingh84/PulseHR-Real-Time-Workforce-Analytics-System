@@ -1,7 +1,7 @@
 # DECISIONS.md
 
 1. **Indexes.**
-   Created unique indexes on `employees.emp_code` and `attendance_logs.(emp_code, date)` to enforce identity uniqueness and race-safe punch-ins. Created compound indexes on `attendance_logs`: `(date: -1, emp_code: 1)` for index-backed cursor pagination, `(emp_code: 1, date: -1)` for fast punch-out open-record lookups, and `(date: 1, late_minutes: 1)` for the late leaderboard. On `employees`: `(department: 1, joined_on: 1)` to accelerate department filtering and headcount pruning. Considered and rejected an index on `status` alone due to low cardinality, which provides poor selectivity compared to composite date bounds.
+   Created unique indexes on `employees.emp_code` and `attendance_logs.(emp_code, date)` to enforce identity uniqueness and race-safe punch-ins. Created compound indexes on `attendance_logs`: `(date: -1, emp_code: 1)` for index-backed cursor pagination, `(emp_code: 1, punch_in: -1)` for O(1) punch-out open-record lookups even with millions of historical rows, and `(date: 1, late_minutes: 1)` for the late leaderboard. On `employees`: `(department: 1, joined_on: 1)` to accelerate department filtering and headcount pruning. Considered and rejected an index on `status` alone due to low cardinality, which provides poor selectivity compared to composite date bounds.
 
 2. **Punch-in race.**
    Both requests compute the attendance date concurrently and attempt insertion into `attendance_logs`. MongoDB's unique compound index on `(emp_code, date)` atomically commits the first insert and rejects the second with `DuplicateKeyError` (code 11000). The application intercepts this exception and returns HTTP 409 Conflict, ensuring exactly one 201 and one 409 without dirty state.

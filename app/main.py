@@ -15,6 +15,7 @@ from typing import Any, List, Optional
 from bson import ObjectId
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Path, Query, status
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, field_validator
 from pymongo import ASCENDING, DESCENDING, MongoClient, ReturnDocument
@@ -26,7 +27,16 @@ load_dotenv(override=False)
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://127.0.0.1:27017")
 MONGO_DB = os.getenv("MONGO_DB", "attendance_db")
 
-client: MongoClient = MongoClient(MONGO_URI, tz_aware=True)
+# High-concurrency connection pool configuration
+client: MongoClient = MongoClient(
+    MONGO_URI,
+    tz_aware=True,
+    maxPoolSize=200,
+    minPoolSize=10,
+    maxIdleTimeMS=45000,
+    waitQueueTimeoutMS=5000,
+    retryWrites=True,
+)
 db = client[MONGO_DB]
 
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -53,7 +63,9 @@ def init_db():
         db.attendance_logs.create_index([("emp_code", ASCENDING), ("date", ASCENDING)], unique=True)
         db.attendance_logs.create_index([("date", DESCENDING), ("emp_code", ASCENDING)])
         db.attendance_logs.create_index([("emp_code", ASCENDING), ("date", DESCENDING)])
+        db.attendance_logs.create_index([("emp_code", ASCENDING), ("punch_in", DESCENDING)])
         db.attendance_logs.create_index([("date", ASCENDING), ("late_minutes", ASCENDING)])
+        db.attendance_logs.create_index([("date", ASCENDING), ("late_minutes", DESCENDING), ("emp_code", ASCENDING)])
         db.attendance_logs.create_index([("status", ASCENDING), ("date", DESCENDING), ("emp_code", ASCENDING)])
     except Exception as e:
         print(f"Index creation warning: {e}")
@@ -70,6 +82,30 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
 )
+
+# Enterprise payload compression for high-scale analytics responses
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# In-memory LRU cache for employee shift configuration (high-frequency punch acceleration)
+SHIFT_CACHE: dict[str, tuple[str, str]] = {}
+
+
+def get_employee_shifts(emp_code: str) -> Optional[tuple[str, str]]:
+    """O(1) in-memory cached lookup of employee shift times."""
+    if emp_code in SHIFT_CACHE:
+        return SHIFT_CACHE[emp_code]
+    emp = db.employees.find_one(
+        {"emp_code": emp_code},
+        {"_id": 0, "shift_start": 1, "shift_end": 1},
+    )
+    if emp is None:
+        return None
+    shifts = (emp["shift_start"], emp["shift_end"])
+    if len(SHIFT_CACHE) > 50000:
+        SHIFT_CACHE.clear()
+    SHIFT_CACHE[emp_code] = shifts
+    return shifts
+
 
 
 # --------------------------------------------------------------------------- #
@@ -381,6 +417,7 @@ def create_employee(body: EmployeeCreate):
     except DuplicateKeyError:
         raise HTTPException(status_code=409, detail="emp_code already exists")
 
+    SHIFT_CACHE[doc["emp_code"]] = (doc["shift_start"], doc["shift_end"])
     doc.pop("_id", None)
     doc["created_at"] = datetime_to_epoch_ms(now_utc)
     return doc
@@ -416,9 +453,10 @@ def punch_in(body: PunchInRequest):
 
     Race-safe with compound unique index (emp_code, date).
     """
-    emp = db.employees.find_one({"emp_code": body.emp_code})
-    if emp is None:
+    shifts = get_employee_shifts(body.emp_code)
+    if shifts is None:
         raise HTTPException(status_code=404, detail="Employee not found")
+    shift_start, shift_end = shifts
 
     if body.punched_at is not None:
         ts_utc = epoch_ms_to_datetime(body.punched_at)
@@ -426,7 +464,7 @@ def punch_in(body: PunchInRequest):
         ts_utc = truncate_to_seconds(datetime.now(timezone.utc))
 
     att_date, shift_start_dt, _ = get_attendance_date_and_shifts(
-        ts_utc, emp["shift_start"], emp["shift_end"]
+        ts_utc, shift_start, shift_end
     )
 
     late_mins = compute_late_minutes(ts_utc, shift_start_dt)
@@ -459,9 +497,10 @@ def punch_out(body: PunchOutRequest):
     Closes most recent record where punch_in <= punched_at.
     Two simultaneous punch-outs yield exactly one 200.
     """
-    emp = db.employees.find_one({"emp_code": body.emp_code})
-    if emp is None:
+    shifts = get_employee_shifts(body.emp_code)
+    if shifts is None:
         raise HTTPException(status_code=404, detail="Employee not found")
+    shift_start, shift_end = shifts
 
     if body.punched_at is not None:
         out_utc = epoch_ms_to_datetime(body.punched_at)
@@ -486,7 +525,7 @@ def punch_out(body: PunchOutRequest):
 
     # Shift end computation
     _, _, shift_end_dt = get_attendance_date_and_shifts(
-        in_utc, emp["shift_start"], emp["shift_end"]
+        in_utc, shift_start, shift_end
     )
 
     work_hrs = compute_work_hours(in_utc, out_utc)
@@ -846,7 +885,17 @@ def build_department_summary_pipeline(month: str, department: Optional[str] = No
                                 ]
                             }
                         }
-                    }
+                    },
+                    {
+                        "$project": {
+                            "_id": 0,
+                            "date": 1,
+                            "status": 1,
+                            "half_day": 1,
+                            "work_hours": 1,
+                            "late_minutes": 1,
+                        }
+                    },
                 ],
                 "as": "logs",
             }
@@ -1080,7 +1129,16 @@ def build_department_trend_pipeline(department: str, from_str: str, to_str: str)
                                 ]
                             }
                         }
-                    }
+                    },
+                    {
+                        "$project": {
+                            "_id": 0,
+                            "date": 1,
+                            "status": 1,
+                            "half_day": 1,
+                            "late_minutes": 1,
+                        }
+                    },
                 ],
                 "as": "logs",
             }
