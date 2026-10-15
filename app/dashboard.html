@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workforce Attendance & Analytics - Real-Time Dashboard</title>
+  <title>Workforce Attendance &amp; Analytics - Real-Time Dashboard</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN for Analytics Aggregation Charts -->
@@ -51,7 +51,7 @@
       </div>
       <div>
         <div class="flex items-center gap-2.5">
-          <h1 class="text-base font-bold text-white tracking-tight">Workforce Attendance & Analytics</h1>
+          <h1 class="text-base font-bold text-white tracking-tight">Workforce Attendance &amp; Analytics</h1>
           <span id="backendBadge" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5">
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span>
             <span id="backendBadgeText">DETECTING BACKEND...</span>
@@ -65,8 +65,8 @@
       </div>
     </div>
 
-    <!-- Active Employee Selector & Live Clock -->
-    <div class="flex items-center gap-4 flex-wrap">
+    <!-- Active Employee Selector & Live Clock & Actions -->
+    <div class="flex items-center gap-3 flex-wrap">
       <!-- Employee Profile Switcher -->
       <div class="flex items-center gap-2 bg-slate-800/90 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs shadow-inner">
         <label for="employeeSelect" class="text-slate-400 font-medium">Employee:</label>
@@ -79,8 +79,20 @@
       <div class="flex items-center gap-2 bg-slate-800/90 border border-slate-700/80 rounded-xl px-3.5 py-1.5 shadow-inner">
         <div class="h-2 w-2 rounded-full bg-indigo-400 animate-pulse"></div>
         <span id="liveClock" class="font-mono text-xs font-semibold text-slate-200">--:--:-- --</span>
-        <span class="text-[10px] font-mono uppercase bg-slate-700/60 px-1.5 py-0.5 rounded text-slate-300">IST (UTC+5:30)</span>
+        <span class="text-[10px] font-mono uppercase bg-slate-700/60 px-1.5 py-0.5 rounded text-slate-300">IST</span>
       </div>
+
+      <!-- Refresh Button -->
+      <button onclick="refreshDashboard()" id="btnRefresh" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-inner">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span>Refresh</span>
+      </button>
+
+      <!-- CSV Export -->
+      <button onclick="exportCSV()" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-inner">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <span>CSV</span>
+      </button>
 
       <!-- Quick Action: Manual Correction -->
       <button onclick="openCorrectionModal()" class="text-xs bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-2 shadow-md shadow-indigo-600/25">
@@ -93,7 +105,7 @@
   <!-- MAIN DASHBOARD CONTENT -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
 
-    <!-- 1. PUNCH ACTIONS INTERFACE (FEATURE #1) -->
+    <!-- 1. PUNCH ACTIONS INTERFACE -->
     <section class="bg-gradient-to-b from-slate-900 to-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
       <!-- Glow ambient backdrop -->
       <div class="absolute -top-24 -right-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -105,16 +117,16 @@
         <div class="flex-1 space-y-3">
           <div class="flex items-center gap-3">
             <div id="empAvatar" class="h-12 w-12 rounded-2xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center font-bold text-lg text-indigo-300">
-              AR
+              --
             </div>
             <div>
               <div class="flex items-center gap-2.5">
-                <h2 id="empName" class="text-xl font-bold text-white tracking-tight">Asha Rao</h2>
-                <span id="empCodeBadge" class="text-xs font-mono px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300">EMP0001</span>
-                <span id="empDeptBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-950/60 border border-indigo-700/60 text-indigo-300 font-medium">Engineering</span>
+                <h2 id="empName" class="text-xl font-bold text-white tracking-tight">Loading...</h2>
+                <span id="empCodeBadge" class="text-xs font-mono px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300">---</span>
+                <span id="empDeptBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-950/60 border border-indigo-700/60 text-indigo-300 font-medium">---</span>
               </div>
               <p id="empShiftInfo" class="text-xs text-slate-400 mt-0.5 font-mono">
-                Standard Shift: <span class="text-slate-200">09:30 - 18:30</span> &bull; Grace Window: <span class="text-amber-400">09:40</span>
+                Standard Shift: <span class="text-slate-200">--:-- - --:--</span> &bull; Grace Window: <span class="text-amber-400">--:--</span>
               </p>
             </div>
           </div>
@@ -123,14 +135,13 @@
           <div class="bg-slate-950/60 border border-slate-800/90 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
               <div id="statusIndicatorRing" class="relative flex items-center justify-center">
-                <span id="statusPing" class="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-75"></span>
-                <span id="statusDot" class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                <span id="statusPing" class="hidden absolute inline-flex h-3.5 w-3.5 rounded-full bg-slate-400 opacity-75"></span>
+                <span id="statusDot" class="relative inline-flex rounded-full h-3 w-3 bg-slate-500"></span>
               </div>
               <div>
                 <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Current State</p>
-                <p id="statusStateLabel" class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
-                  <span>Punched In</span>
-                  <span id="statusTimeAgo" class="text-xs font-normal text-slate-400 font-mono">(since 09:30 AM)</span>
+                <p id="statusStateLabel" class="text-sm font-bold text-slate-400 flex items-center gap-1.5">
+                  <span>Initializing...</span>
                 </p>
               </div>
             </div>
@@ -164,17 +175,16 @@
       <div id="punchFeedbackBox" class="mt-4 hidden p-3 rounded-xl font-mono text-xs transition-all"></div>
     </section>
 
-    <!-- 2. ANALYTICS SUMMARY KPI CARDS (FEATURE #3) -->
+    <!-- 2. ANALYTICS SUMMARY KPI CARDS -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       
       <!-- Card 1: Total Hours Worked This Week -->
       <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
         <div class="space-y-1">
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Weekly Work Hours</p>
-          <p id="kpiWeeklyHours" class="text-2xl font-extrabold text-white font-mono">42.5 <span class="text-xs text-slate-400 font-sans">hrs</span></p>
-          <p class="text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-            <span>+2.5 hrs vs baseline (40h)</span>
+          <p id="kpiWeeklyHours" class="text-2xl font-extrabold text-white font-mono">-- <span class="text-xs text-slate-400 font-sans">hrs</span></p>
+          <p id="kpiWeeklyDelta" class="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
+            <span>Computing...</span>
           </p>
         </div>
         <div class="h-12 w-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
@@ -186,8 +196,8 @@
       <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
         <div class="space-y-1">
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Punch-In Time</p>
-          <p id="kpiAvgPunchIn" class="text-2xl font-extrabold text-white font-mono">09:24 <span class="text-xs text-slate-400 font-sans">AM</span></p>
-          <p class="text-[11px] text-emerald-400 font-medium">Within 10m Grace Period</p>
+          <p id="kpiAvgPunchIn" class="text-2xl font-extrabold text-white font-mono">--:-- <span class="text-xs text-slate-400 font-sans">AM</span></p>
+          <p id="kpiAvgPunchNote" class="text-[11px] text-slate-500 font-medium">Computing...</p>
         </div>
         <div class="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -198,8 +208,8 @@
       <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
         <div class="space-y-1">
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Consistency Rate</p>
-          <p id="kpiConsistency" class="text-2xl font-extrabold text-white font-mono">96.4<span class="text-xs text-slate-400 font-sans">%</span></p>
-          <p class="text-[11px] text-indigo-400 font-medium">Half-Up Math (21/22 Days)</p>
+          <p id="kpiConsistency" class="text-2xl font-extrabold text-white font-mono">--<span class="text-xs text-slate-400 font-sans">%</span></p>
+          <p id="kpiConsistencyNote" class="text-[11px] text-slate-500 font-medium">Computing...</p>
         </div>
         <div class="h-12 w-12 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -210,7 +220,7 @@
       <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
         <div class="space-y-1">
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Shifts</p>
-          <p id="kpiActiveShifts" class="text-2xl font-extrabold text-emerald-400 font-mono">18 <span class="text-xs text-slate-400 font-sans">/ 25 online</span></p>
+          <p id="kpiActiveShifts" class="text-2xl font-extrabold text-emerald-400 font-mono">-- <span class="text-xs text-slate-400 font-sans">/ -- online</span></p>
           <p class="text-[11px] text-slate-400 font-medium">Real-time Clocked In</p>
         </div>
         <div class="h-12 w-12 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center">
@@ -220,15 +230,15 @@
 
     </section>
 
-    <!-- 3. VISUAL CHARTS & COMPLEX METRICS (FEATURE #3) -->
+    <!-- 3. VISUAL CHARTS: Trend Line + Status Donut -->
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
       <!-- 30-Day Daily Attendance Trend Chart (Line Chart) -->
       <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col justify-between">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="text-sm font-bold text-white tracking-tight">30-Day Workforce Attendance Trend</h3>
-            <p class="text-xs text-slate-400">MongoDB Aggregation ($densify & $setWindowFields moving average)</p>
+            <h3 class="text-sm font-bold text-white tracking-tight">Daily Workforce Attendance Trend</h3>
+            <p class="text-xs text-slate-400">MongoDB Aggregation ($densify &amp; $setWindowFields)</p>
           </div>
           <span class="text-xs font-mono px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-indigo-300">
             Daily Rollup
@@ -239,12 +249,33 @@
         </div>
       </div>
 
-      <!-- Department Breakdown Chart (Bar Chart) -->
+      <!-- Status Breakdown Donut Chart -->
       <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col justify-between">
         <div class="flex items-center justify-between mb-4">
           <div>
+            <h3 class="text-sm font-bold text-white tracking-tight">Status Breakdown</h3>
+            <p class="text-xs text-slate-400">Present / Late / Absent / Leave</p>
+          </div>
+        </div>
+        <div class="relative h-56 w-full flex items-center justify-center">
+          <canvas id="donutChart"></canvas>
+        </div>
+        <div id="donutLegend" class="flex flex-wrap gap-2 justify-center mt-3 text-[10px] font-semibold">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 4. DEPARTMENT BAR + LATE-COMING LEADERBOARD -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Department Breakdown Bar Chart -->
+      <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-4">
+          <div>
             <h3 class="text-sm font-bold text-white tracking-tight">Department Presence Rates</h3>
-            <p class="text-xs text-slate-400">Headcount & Avg Hours ($lookup pipeline)</p>
+            <p class="text-xs text-slate-400">Headcount &amp; Avg Hours ($lookup pipeline)</p>
           </div>
         </div>
         <div class="relative h-64 w-full">
@@ -252,11 +283,6 @@
         </div>
       </div>
 
-    </section>
-
-    <!-- 4. LATE-COMING LEADERBOARD & RECENT ATTENDANCE -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
       <!-- Late-coming Analytics Leaderboard ($rank Window Pipeline) -->
       <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
         <div class="flex items-center justify-between">
@@ -284,38 +310,66 @@
         </div>
       </div>
 
-      <!-- Attendance Activity Stream -->
-      <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-bold text-white tracking-tight">Recent Attendance Records</h3>
-            <p class="text-xs text-slate-400">Real-time daily punches across the workforce</p>
-          </div>
-          <span class="text-xs font-mono text-slate-400" id="recordCountBadge">Showing 5 of 225</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="border-b border-slate-800 text-slate-400 font-semibold">
-                <th class="pb-2.5">Date</th>
-                <th class="pb-2.5">Emp Code</th>
-                <th class="pb-2.5">Status</th>
-                <th class="pb-2.5">Punch In</th>
-                <th class="pb-2.5">Punch Out</th>
-                <th class="pb-2.5 text-right">Work Hours</th>
-              </tr>
-            </thead>
-            <tbody id="attendanceTbody" class="divide-y divide-slate-800/60 font-mono">
-              <!-- Populated dynamically -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
     </section>
 
-    <!-- 5. MANUAL CORRECTIONS & AUDIT TRAIL VIEW (FEATURE #2) -->
+    <!-- 5. RECENT ATTENDANCE LOG WITH FILTERS -->
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-bold text-white tracking-tight">Attendance Activity Log</h3>
+          <p class="text-xs text-slate-400">Real-time daily punches across the workforce</p>
+        </div>
+        <span class="text-xs font-mono text-slate-400" id="recordCountBadge">Loading...</span>
+      </div>
+
+      <!-- Filter Toolbar -->
+      <div class="flex flex-wrap items-center gap-3">
+        <input type="text" id="searchInput" oninput="onFilterChange()" placeholder="Search name or code..."
+          class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500 w-48 placeholder:text-slate-600 font-mono">
+        <select id="filterDept" onchange="onFilterChange()" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500 font-mono">
+          <option value="">All Departments</option>
+          <!-- Populated dynamically -->
+        </select>
+        <select id="filterStatus" onchange="onFilterChange()" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500 font-mono">
+          <option value="">All Statuses</option>
+          <option value="PRESENT">Present</option>
+          <option value="WFH">WFH</option>
+          <option value="ON_DUTY">On Duty</option>
+          <option value="LEAVE">Leave</option>
+          <option value="ABSENT">Absent</option>
+        </select>
+        <button onclick="clearFilters()" class="text-[11px] text-slate-400 hover:text-white transition px-2 py-1 rounded-lg border border-slate-800 hover:border-slate-600">Clear</button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-800 text-slate-400 font-semibold">
+              <th class="pb-2.5">Date</th>
+              <th class="pb-2.5">Emp Code</th>
+              <th class="pb-2.5">Name</th>
+              <th class="pb-2.5">Department</th>
+              <th class="pb-2.5">Status</th>
+              <th class="pb-2.5">Punch In</th>
+              <th class="pb-2.5">Punch Out</th>
+              <th class="pb-2.5 text-right">Work Hours</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTbody" class="divide-y divide-slate-800/60 font-mono">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button id="btnShowMore" onclick="toggleShowAll()" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-semibold px-4 py-1.5 rounded-xl transition active:scale-95 hidden">
+          Show More
+        </button>
+      </div>
+    </section>
+
+    <!-- 6. MANUAL CORRECTIONS & AUDIT TRAIL VIEW -->
     <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -348,7 +402,7 @@
               <th class="py-3 px-3.5">Adjusted Punch</th>
               <th class="py-3 px-3.5">Reason for Change</th>
               <th class="py-3 px-3.5">Adjusted By</th>
-              <th class="py-3 px-3.5">Status & Hash</th>
+              <th class="py-3 px-3.5">Status &amp; Hash</th>
             </tr>
           </thead>
           <tbody id="auditTrailTbody" class="divide-y divide-slate-800/60 font-mono">
@@ -360,9 +414,16 @@
 
   </main>
 
-  <!-- MANUAL CORRECTION MODAL (FEATURE #2) -->
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/60 py-3 px-6 text-center text-[11px] text-slate-500 font-mono">
+    <span>HROne Workforce Platform</span> &bull;
+    <span id="footerDataSource">Real-time MongoDB Aggregation Engine</span> &bull;
+    <span id="footerTimestamp">--</span>
+  </footer>
+
+  <!-- MANUAL CORRECTION MODAL -->
   <div id="correctionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5">
       
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
@@ -386,7 +447,7 @@
           </div>
           <div>
             <label class="block text-slate-400 font-medium mb-1">Attendance Date</label>
-            <input type="date" id="modalDate" value="2026-10-15" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none focus:border-indigo-500" required>
+            <input type="date" id="modalDate" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none focus:border-indigo-500" required>
           </div>
         </div>
 
@@ -446,7 +507,7 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toastBox" class="fixed bottom-6 right-6 z-50 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none">
     <div class="bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl p-4 flex items-center gap-3 text-xs max-w-sm">
-      <div id="toastIcon" class="h-8 w-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">✓</div>
+      <div id="toastIcon" class="h-8 w-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">OK</div>
       <div>
         <p id="toastTitle" class="font-bold text-white">Notification</p>
         <p id="toastMessage" class="text-slate-400 mt-0.5">Details here</p>
@@ -455,12 +516,12 @@
   </div>
 
   <!-- ----------------------------------------------------------------------- -->
-  <!-- FRONTEND SCRIPT: REAL-TIME FASTAPI ADAPTER + STANDALONE MOCK ENGINE -->
+  <!-- FRONTEND SCRIPT: REAL-TIME FASTAPI ADAPTER + STANDALONE MOCK ENGINE     -->
   <!-- ----------------------------------------------------------------------- -->
   <script>
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // 1. MOCK STATE (STANDALONE FALLBACK IF FASTAPI BACKEND IS OFFLINE)
-    // -------------------------------------------------------------------------
+    // =========================================================================
     const MOCK_DATA = {
       employees: [
         { emp_code: "EMP0001", name: "Asha Rao", department: "Engineering", shift_start: "09:30", shift_end: "18:30" },
@@ -475,36 +536,28 @@
         { emp_code: "EMP0021", name: "Sunita Rao", department: "Legal", shift_start: "09:30", shift_end: "18:30" }
       ],
       attendance: [
-        { emp_code: "EMP0001", date: "2026-10-15", status: "PRESENT", punch_in: Date.now() - 4 * 3600 * 1000, punch_out: null, work_hours: null },
-        { emp_code: "EMP0002", date: "2026-10-15", status: "PRESENT", punch_in: Date.now() - 3.5 * 3600 * 1000, punch_out: null, work_hours: null },
-        { emp_code: "EMP0003", date: "2026-10-15", status: "PRESENT", punch_in: Date.now() - 9 * 3600 * 1000, punch_out: Date.now() - 0.5 * 3600 * 1000, work_hours: 8.5 },
-        { emp_code: "EMP0004", date: "2026-10-15", status: "WFH", punch_in: Date.now() - 4.2 * 3600 * 1000, punch_out: null, work_hours: null },
-        { emp_code: "EMP0005", date: "2026-10-15", status: "ABSENT", punch_in: null, punch_out: null, work_hours: 0 },
+        { emp_code: "EMP0001", date: new Date().toISOString().slice(0, 10), status: "PRESENT", punch_in: Date.now() - 4 * 3600000, punch_out: null, work_hours: null },
+        { emp_code: "EMP0002", date: new Date().toISOString().slice(0, 10), status: "PRESENT", punch_in: Date.now() - 3.5 * 3600000, punch_out: null, work_hours: null },
+        { emp_code: "EMP0003", date: new Date().toISOString().slice(0, 10), status: "PRESENT", punch_in: Date.now() - 9 * 3600000, punch_out: Date.now() - 0.5 * 3600000, work_hours: 8.5 },
+        { emp_code: "EMP0004", date: new Date().toISOString().slice(0, 10), status: "WFH", punch_in: Date.now() - 4.2 * 3600000, punch_out: null, work_hours: null },
+        { emp_code: "EMP0005", date: new Date().toISOString().slice(0, 10), status: "ABSENT", punch_in: null, punch_out: null, work_hours: 0 },
+        { emp_code: "EMP0008", date: new Date().toISOString().slice(0, 10), status: "ON_DUTY", punch_in: Date.now() - 5 * 3600000, punch_out: null, work_hours: null },
+        { emp_code: "EMP0010", date: new Date().toISOString().slice(0, 10), status: "LEAVE", punch_in: null, punch_out: null, work_hours: 0 },
       ],
       auditTrail: [
         {
-          timestamp: "2026-10-14 18:45:10",
-          emp_code: "EMP0003",
-          name: "Neha Iyer",
-          date: "2026-10-14",
-          original: "In: -- | Out: -- (ABSENT)",
-          adjusted: "In: 09:35 | Out: 18:40 (PRESENT)",
-          reason: "Client on-site meeting at customer premises",
-          by: "Admin / Rahul V",
-          status: "Approved",
-          checksum: "sha256:7f45c26..."
+          timestamp: new Date(Date.now() - 86400000).toLocaleString(),
+          emp_code: "EMP0003", name: "Neha Iyer", date: new Date(Date.now() - 86400000).toISOString().slice(0, 10),
+          original: "In: -- | Out: -- (ABSENT)", adjusted: "In: 09:35 | Out: 18:40 (PRESENT)",
+          reason: "Client on-site meeting at customer premises", by: "Admin / Rahul V",
+          status: "Approved", checksum: "sha256:7f45c26..."
         },
         {
-          timestamp: "2026-10-13 19:12:00",
-          emp_code: "EMP0001",
-          name: "Asha Rao",
-          date: "2026-10-13",
-          original: "In: 09:30 | Out: -- (Unclosed)",
-          adjusted: "In: 09:30 | Out: 18:35 (PRESENT)",
-          reason: "Turnstile failure during egress rush",
-          by: "Supervisor / Sarah",
-          status: "Approved",
-          checksum: "sha256:9a32b11..."
+          timestamp: new Date(Date.now() - 172800000).toLocaleString(),
+          emp_code: "EMP0001", name: "Asha Rao", date: new Date(Date.now() - 172800000).toISOString().slice(0, 10),
+          original: "In: 09:30 | Out: -- (Unclosed)", adjusted: "In: 09:30 | Out: 18:35 (PRESENT)",
+          reason: "Turnstile failure during egress rush", by: "Supervisor / Sarah",
+          status: "Approved", checksum: "sha256:9a32b11..."
         }
       ],
       leaderboard: [
@@ -516,9 +569,9 @@
       ]
     };
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // 2. STATE MANAGER
-    // -------------------------------------------------------------------------
+    // =========================================================================
     const state = {
       isBackendOnline: false,
       apiBase: window.location.origin.includes('http') ? window.location.origin : 'http://127.0.0.1:8000',
@@ -526,81 +579,110 @@
       attendanceLogs: [],
       auditTrail: [],
       leaderboard: [],
-      selectedEmpCode: 'EMP0001',
+      deptSummary: [],
+      selectedEmpCode: null,
       activeShiftTimer: null,
       trendChart: null,
-      deptChart: null
+      deptChart: null,
+      donutChart: null,
+      sseInstance: null,
+      sseReconnectDelay: 1000,
+      // Filter / pagination state
+      searchQuery: '',
+      filterDept: '',
+      filterStatus: '',
+      showAllRecords: false,
+      PAGE_SIZE: 15,
     };
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // 3. INITIALIZATION & LIVE BACKEND PROBE
-    // -------------------------------------------------------------------------
+    // =========================================================================
     window.addEventListener('DOMContentLoaded', async () => {
       startLiveClock();
+      updateFooterTimestamp();
       await probeBackend();
       renderDashboard();
       initCharts();
+      updateCharts();
       if (state.isBackendOnline) {
         initSSE();
       }
     });
 
     function startLiveClock() {
-      setInterval(() => {
+      const tick = () => {
         const now = new Date();
         document.getElementById('liveClock').innerText = now.toLocaleTimeString('en-US', {
-          timeZone: 'Asia/Kolkata',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true
+          timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
         });
-      }, 1000);
+      };
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    function updateFooterTimestamp() {
+      const el = document.getElementById('footerTimestamp');
+      if (el) el.innerText = 'Last refresh: ' + new Date().toLocaleTimeString('en-US', {
+        timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+      });
     }
 
     async function probeBackend() {
       try {
-        const res = await fetch(`${state.apiBase}/health`, { signal: AbortSignal.timeout(2000) });
+        const res = await fetch(`${state.apiBase}/health`, { signal: AbortSignal.timeout(2500) });
         if (res.ok) {
           state.isBackendOnline = true;
           document.getElementById('backendBadge').className = 'text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5';
           document.getElementById('backendBadgeText').innerText = 'LIVE FASTAPI BACKEND';
+          document.getElementById('footerDataSource').innerText = 'Live MongoDB Aggregation Engine';
           await fetchBackendData();
           return;
         }
-      } catch (e) {
-        // Fallback to standalone mode
-      }
+      } catch (e) { /* fallback */ }
 
       state.isBackendOnline = false;
       document.getElementById('backendBadge').className = 'text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center gap-1.5';
       document.getElementById('backendBadgeText').innerText = 'STANDALONE (MOCK ENGINE)';
       document.getElementById('sseStatusText').innerText = 'Stream: local reactive events';
+      document.getElementById('footerDataSource').innerText = 'Standalone Mock Data Engine';
       hydrateMockData();
     }
 
     async function fetchBackendData() {
+      const currentMonth = new Date().toISOString().slice(0, 7); // dynamic month
       try {
-        const [empRes, attRes, leadRes] = await Promise.all([
-          fetch(`${state.apiBase}/employees?page_size=50`),
-          fetch(`${state.apiBase}/attendance?page_size=50`),
-          fetch(`${state.apiBase}/analytics/leaderboard/late?month=2026-10`)
+        const [empRes, attRes, leadRes, deptRes] = await Promise.all([
+          fetch(`${state.apiBase}/employees?page_size=100`),
+          fetch(`${state.apiBase}/attendance?page_size=100`),
+          fetch(`${state.apiBase}/analytics/leaderboard/late?month=${currentMonth}`),
+          fetch(`${state.apiBase}/analytics/departments/summary?month=${currentMonth}`)
         ]);
 
         if (empRes.ok) {
           const empJson = await empRes.json();
-          state.employees = empJson.items || [];
+          state.employees = empJson.items || empJson || [];
         }
         if (attRes.ok) {
           const attJson = await attRes.json();
-          state.attendanceLogs = attJson.items || [];
+          state.attendanceLogs = attJson.items || attJson || [];
           extractAuditTrailFromLogs(state.attendanceLogs);
         }
         if (leadRes.ok) {
           const leadJson = await leadRes.json();
           state.leaderboard = Array.isArray(leadJson) ? leadJson : (leadJson.items || []);
         }
+        if (deptRes.ok) {
+          const deptJson = await deptRes.json();
+          state.deptSummary = Array.isArray(deptJson) ? deptJson : (deptJson.items || deptJson.departments || []);
+        }
+
+        // Set default selected employee if not set
+        if (!state.selectedEmpCode && state.employees.length > 0) {
+          state.selectedEmpCode = state.employees[0].emp_code;
+        }
       } catch (err) {
+        console.warn('Backend fetch failed, using mock data:', err.message);
         hydrateMockData();
       }
     }
@@ -610,6 +692,9 @@
       state.attendanceLogs = [...MOCK_DATA.attendance];
       state.auditTrail = [...MOCK_DATA.auditTrail];
       state.leaderboard = [...MOCK_DATA.leaderboard];
+      if (!state.selectedEmpCode && state.employees.length > 0) {
+        state.selectedEmpCode = state.employees[0].emp_code;
+      }
     }
 
     function extractAuditTrailFromLogs(logs) {
@@ -636,33 +721,83 @@
       state.auditTrail = trail.length > 0 ? trail : MOCK_DATA.auditTrail;
     }
 
+    // =========================================================================
+    // 4. SSE (SERVER-SENT EVENTS) WITH AUTO-RECONNECT
+    // =========================================================================
     function initSSE() {
+      if (state.sseInstance) {
+        state.sseInstance.close();
+      }
+
       const es = new EventSource(`${state.apiBase}/events`);
+      state.sseInstance = es;
+
       es.addEventListener('connected', () => {
         document.getElementById('sseStatusText').innerText = 'Stream: live SSE active';
+        state.sseReconnectDelay = 1000; // reset backoff on successful connect
       });
+
       es.addEventListener('punch_in', (e) => {
         const d = JSON.parse(e.data);
         showToast('Real-Time Punch In', `Emp ${d.emp_code} punched in.`);
-        probeBackend();
+        silentRefresh();
       });
+
       es.addEventListener('punch_out', (e) => {
         const d = JSON.parse(e.data);
-        showToast('Real-Time Punch Out', `Emp ${d.emp_code} completed shift (${d.work_hours} hrs).`);
-        probeBackend();
+        showToast('Real-Time Punch Out', `Emp ${d.emp_code} completed shift (${d.work_hours || '--'} hrs).`);
+        silentRefresh();
       });
+
       es.addEventListener('attendance_regularized', (e) => {
         const d = JSON.parse(e.data);
         showToast('Audit Trail Regularization', `Date ${d.date} adjusted by ${d.regularized_by}.`);
-        probeBackend();
+        silentRefresh();
       });
+
+      es.addEventListener('employee_created', (e) => {
+        const d = JSON.parse(e.data);
+        showToast('New Employee', `${d.name} (${d.emp_code}) added to ${d.department}.`);
+        silentRefresh();
+      });
+
+      es.onerror = () => {
+        document.getElementById('sseStatusText').innerText = 'Stream: reconnecting...';
+        es.close();
+        // Exponential backoff reconnect (max 30s)
+        setTimeout(() => {
+          if (state.isBackendOnline) initSSE();
+        }, state.sseReconnectDelay);
+        state.sseReconnectDelay = Math.min(state.sseReconnectDelay * 2, 30000);
+      };
     }
 
-    // -------------------------------------------------------------------------
-    // 4. DASHBOARD RENDERING
-    // -------------------------------------------------------------------------
+    // Silent refresh: fetch data + re-render without full probe
+    async function silentRefresh() {
+      await fetchBackendData();
+      renderDashboard();
+      updateCharts();
+      updateFooterTimestamp();
+    }
+
+    // Manual refresh button
+    async function refreshDashboard() {
+      const btn = document.getElementById('btnRefresh');
+      btn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg><span>Refreshing...</span>';
+      await probeBackend();
+      renderDashboard();
+      updateCharts();
+      updateFooterTimestamp();
+      btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg><span>Refresh</span>';
+      showToast('Dashboard Refreshed', 'All data re-fetched from backend.');
+    }
+
+    // =========================================================================
+    // 5. DASHBOARD RENDERING
+    // =========================================================================
     function renderDashboard() {
       populateEmployeeDropdowns();
+      populateDeptFilter();
       renderActiveEmployeeCard();
       renderRecentAttendance();
       renderLeaderboard();
@@ -682,6 +817,14 @@
 
       selectTop.innerHTML = options;
       selectModal.innerHTML = options;
+    }
+
+    function populateDeptFilter() {
+      const select = document.getElementById('filterDept');
+      const depts = [...new Set(state.employees.map(e => e.department))].sort();
+      const current = select.value;
+      select.innerHTML = '<option value="">All Departments</option>' +
+        depts.map(d => `<option value="${d}" ${d === current ? 'selected' : ''}>${d}</option>`).join('');
     }
 
     function onEmployeeChange() {
@@ -707,7 +850,7 @@
 
       // Find current day's record for this employee
       const today = new Date().toISOString().slice(0, 10);
-      const todayRecord = state.attendanceLogs.find(a => a.emp_code === emp.emp_code && (a.date === today || a.punch_in));
+      const todayRecord = state.attendanceLogs.find(a => a.emp_code === emp.emp_code && a.date === today);
 
       const isPunchedIn = todayRecord && todayRecord.punch_in && !todayRecord.punch_out;
       const hasCompletedShift = todayRecord && todayRecord.punch_in && todayRecord.punch_out;
@@ -721,7 +864,7 @@
       if (isPunchedIn) {
         ping.className = 'animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-75';
         dot.className = 'relative inline-flex rounded-full h-3 w-3 bg-emerald-500';
-        const inTimeStr = formatEpochTime(todayRecord.punch_in);
+        const inTimeStr = formatPunchTime(todayRecord.punch_in);
         stateLabel.className = 'text-sm font-bold text-emerald-400 flex items-center gap-1.5';
         stateLabel.innerHTML = `<span>Punched In</span> <span class="text-xs font-normal text-slate-400 font-mono">(since ${inTimeStr})</span>`;
 
@@ -735,7 +878,8 @@
         ping.className = 'hidden';
         dot.className = 'relative inline-flex rounded-full h-3 w-3 bg-indigo-500';
         stateLabel.className = 'text-sm font-bold text-indigo-300 flex items-center gap-1.5';
-        stateLabel.innerHTML = `<span>Shift Completed</span> <span class="text-xs font-normal text-slate-400 font-mono">(${todayRecord.work_hours || 8.5} hrs logged)</span>`;
+        const hrs = todayRecord.work_hours != null ? todayRecord.work_hours : '--';
+        stateLabel.innerHTML = `<span>Shift Completed</span> <span class="text-xs font-normal text-slate-400 font-mono">(${hrs} hrs logged)</span>`;
 
         btnIn.disabled = true;
         btnIn.classList.add('opacity-40', 'cursor-not-allowed');
@@ -743,7 +887,7 @@
         btnOut.classList.add('opacity-40', 'cursor-not-allowed');
 
         clearInterval(state.activeShiftTimer);
-        document.getElementById('activeWorkTimer').innerText = `${todayRecord.work_hours || 8.5}h 00m 00s`;
+        document.getElementById('activeWorkTimer').innerText = `${hrs}h 00m 00s`;
       } else {
         ping.className = 'hidden';
         dot.className = 'relative inline-flex rounded-full h-3 w-3 bg-slate-500';
@@ -760,8 +904,9 @@
       }
     }
 
-    function startWorkDurationTimer(startEpoch) {
+    function startWorkDurationTimer(startVal) {
       if (state.activeShiftTimer) clearInterval(state.activeShiftTimer);
+      const startEpoch = typeof startVal === 'number' ? startVal : new Date(startVal).getTime();
       state.activeShiftTimer = setInterval(() => {
         const diffMs = Math.max(0, Date.now() - startEpoch);
         const hours = Math.floor(diffMs / 3600000);
@@ -773,7 +918,7 @@
     }
 
     function calculateGraceTime(startStr) {
-      if (!startStr) return '09:40';
+      if (!startStr) return '--:--';
       const [h, m] = startStr.split(':').map(Number);
       const totalM = h * 60 + m + 10;
       const gh = Math.floor(totalM / 60);
@@ -781,19 +926,96 @@
       return `${String(gh).padStart(2, '0')}:${String(gm).padStart(2, '0')}`;
     }
 
-    function formatEpochTime(epoch) {
-      if (!epoch) return '--:--';
-      return new Date(epoch).toLocaleTimeString('en-US', {
-        timeZone: 'Asia/Kolkata',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
+    function formatPunchTime(val) {
+      if (!val) return '--:--';
+      const d = typeof val === 'number' ? new Date(val) : new Date(val);
+      if (isNaN(d.getTime())) return '--:--';
+      return d.toLocaleTimeString('en-US', {
+        timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true
       });
     }
 
-    // -------------------------------------------------------------------------
-    // 5. PUNCH ACTION HANDLERS (FEATURE #1)
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // 6. KPI CARDS - ALL COMPUTED DYNAMICALLY FROM STATE
+    // =========================================================================
+    function updateKPICards() {
+      const logs = state.attendanceLogs;
+      const totalEmp = state.employees.length || 1;
+
+      // --- Card 1: Weekly Work Hours ---
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0=Sun
+      const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - mondayOffset);
+      monday.setHours(0, 0, 0, 0);
+      const mondayStr = monday.toISOString().slice(0, 10);
+      const todayStr = now.toISOString().slice(0, 10);
+
+      const weekLogs = logs.filter(a => a.date >= mondayStr && a.date <= todayStr);
+      const totalWeekHours = weekLogs.reduce((sum, a) => sum + (parseFloat(a.work_hours) || 0), 0);
+      const avgWeekPerEmp = totalEmp > 0 ? (totalWeekHours / totalEmp).toFixed(1) : '0.0';
+
+      const kpiWeekEl = document.getElementById('kpiWeeklyHours');
+      kpiWeekEl.innerHTML = `${avgWeekPerEmp} <span class="text-xs text-slate-400 font-sans">hrs/emp</span>`;
+
+      const kpiWeekDelta = document.getElementById('kpiWeeklyDelta');
+      const baseline = 8 * (mondayOffset + 1); // expected hours per employee so far this week
+      const delta = (parseFloat(avgWeekPerEmp) - baseline).toFixed(1);
+      if (parseFloat(delta) >= 0) {
+        kpiWeekDelta.className = 'text-[11px] text-emerald-400 flex items-center gap-1 font-medium';
+        kpiWeekDelta.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg><span>+${delta} hrs vs baseline (${baseline}h)</span>`;
+      } else {
+        kpiWeekDelta.className = 'text-[11px] text-rose-400 flex items-center gap-1 font-medium';
+        kpiWeekDelta.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg><span>${delta} hrs vs baseline (${baseline}h)</span>`;
+      }
+
+      // --- Card 2: Average Punch-In Time ---
+      const punchInTimes = logs
+        .filter(a => a.punch_in)
+        .map(a => {
+          const d = typeof a.punch_in === 'number' ? new Date(a.punch_in) : new Date(a.punch_in);
+          // Get IST hours/minutes
+          const ist = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+          return ist.getHours() * 60 + ist.getMinutes();
+        })
+        .filter(m => m > 0); // exclude midnight artifacts
+
+      let avgPunchStr = '--:--';
+      let avgAmPm = '';
+      let avgNote = 'No punch-in data';
+      if (punchInTimes.length > 0) {
+        const avgMinutes = punchInTimes.reduce((s, m) => s + m, 0) / punchInTimes.length;
+        const avgH24 = Math.floor(avgMinutes / 60);
+        const avgM = Math.round(avgMinutes % 60);
+        const avgH12 = avgH24 > 12 ? avgH24 - 12 : (avgH24 === 0 ? 12 : avgH24);
+        avgAmPm = avgH24 >= 12 ? 'PM' : 'AM';
+        avgPunchStr = `${String(avgH12).padStart(2, '0')}:${String(avgM).padStart(2, '0')}`;
+        // Check against 9:40 AM (580 minutes) as grace threshold
+        avgNote = avgMinutes <= 580 ? 'Within 10m Grace Period' : 'Past Grace Window';
+      }
+      document.getElementById('kpiAvgPunchIn').innerHTML = `${avgPunchStr} <span class="text-xs text-slate-400 font-sans">${avgAmPm}</span>`;
+      const noteEl = document.getElementById('kpiAvgPunchNote');
+      noteEl.innerText = avgNote;
+      noteEl.className = avgNote.includes('Within') ? 'text-[11px] text-emerald-400 font-medium' : 'text-[11px] text-amber-400 font-medium';
+
+      // --- Card 3: Consistency Rate ---
+      const totalRecs = logs.length;
+      const presentRecs = logs.filter(a =>
+        a.status === 'PRESENT' || a.status === 'WFH' || a.status === 'ON_DUTY'
+      ).length;
+      const consistency = totalRecs > 0 ? ((presentRecs / totalRecs) * 100).toFixed(1) : '0.0';
+      document.getElementById('kpiConsistency').innerHTML = `${consistency}<span class="text-xs text-slate-400 font-sans">%</span>`;
+      document.getElementById('kpiConsistencyNote').innerText = `Half-Up Math (${presentRecs}/${totalRecs} Records)`;
+
+      // --- Card 4: Active Shifts ---
+      const activeCount = logs.filter(a => a.punch_in && !a.punch_out).length;
+      document.getElementById('kpiActiveShifts').innerHTML = `${activeCount} <span class="text-xs text-slate-400 font-sans">/ ${totalEmp} online</span>`;
+    }
+
+    // =========================================================================
+    // 7. PUNCH ACTION HANDLERS
+    // =========================================================================
     async function handlePunch(action) {
       const empCode = state.selectedEmpCode;
       const box = document.getElementById('punchFeedbackBox');
@@ -813,10 +1035,9 @@
           const data = await res.json();
           if (res.ok) {
             box.className = 'mt-4 p-3 rounded-xl font-mono text-xs bg-emerald-950/80 border border-emerald-700 text-emerald-300';
-            box.innerText = `✓ Punch ${action.toUpperCase()} Successful! Status: ${data.status || 'OK'}`;
+            box.innerText = `Punch ${action.toUpperCase()} Successful! Status: ${data.status || 'OK'}`;
             showToast('Biometric Punch Recorded', `${empCode} successfully punched ${action}.`);
-            await fetchBackendData();
-            renderDashboard();
+            await silentRefresh();
             setTimeout(() => box.classList.add('hidden'), 4000);
           } else {
             box.className = 'mt-4 p-3 rounded-xl font-mono text-xs bg-rose-950/80 border border-rose-700 text-rose-300';
@@ -840,23 +1061,25 @@
               rec.status = 'PRESENT';
             }
           } else {
-            if (rec) {
+            if (rec && rec.punch_in) {
               rec.punch_out = Date.now();
-              rec.work_hours = 8.5;
+              const diff = (rec.punch_out - rec.punch_in) / 3600000;
+              rec.work_hours = parseFloat(diff.toFixed(2));
             }
           }
           box.className = 'mt-4 p-3 rounded-xl font-mono text-xs bg-emerald-950/80 border border-emerald-700 text-emerald-300';
-          box.innerText = `✓ [MOCK] Punch ${action.toUpperCase()} Recorded Locally!`;
+          box.innerText = `[MOCK] Punch ${action.toUpperCase()} Recorded Locally!`;
           showToast('Biometric Punch Simulated', `${empCode} marked ${action}.`);
           renderDashboard();
+          updateCharts();
           setTimeout(() => box.classList.add('hidden'), 4000);
         }, 300);
       }
     }
 
-    // -------------------------------------------------------------------------
-    // 6. MANUAL CORRECTION WORKFLOW (FEATURE #2)
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // 8. MANUAL CORRECTION WORKFLOW
+    // =========================================================================
     function openCorrectionModal() {
       document.getElementById('modalEmpCode').value = state.selectedEmpCode;
       document.getElementById('modalDate').value = new Date().toISOString().slice(0, 10);
@@ -915,8 +1138,7 @@
           if (res.ok) {
             showToast('Correction Saved', `Attendance for ${empCode} regularized with SHA-256 audit log.`);
             closeCorrectionModal();
-            await fetchBackendData();
-            renderDashboard();
+            await silentRefresh();
           } else {
             alert(`Error (${res.status}): ${data.detail || JSON.stringify(data)}`);
           }
@@ -931,7 +1153,7 @@
           emp_code: empCode,
           name: emp ? emp.name : empCode,
           date: targetDate,
-          original: 'In: 09:30 | Out: -- (Unclosed)',
+          original: 'In: -- | Out: -- (Unclosed)',
           adjusted: `In: ${inTime || '--'} | Out: ${outTime || '--'} (${status})`,
           reason: reason,
           by: adjustedBy,
@@ -944,11 +1166,15 @@
       }
     }
 
-    // -------------------------------------------------------------------------
-    // 7. RENDER SUB-COMPONENTS & AUDIT TABLES
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // 9. RENDER SUB-COMPONENTS & TABLES
+    // =========================================================================
     function renderAuditTrail() {
       const tbody = document.getElementById('auditTrailTbody');
+      if (state.auditTrail.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-500">No audit trail entries yet.</td></tr>';
+        return;
+      }
       tbody.innerHTML = state.auditTrail.map(log => `
         <tr class="hover:bg-slate-800/40 transition">
           <td class="py-3 px-3.5 text-slate-400 text-[11px]">${log.timestamp}</td>
@@ -967,31 +1193,102 @@
       `).join('');
     }
 
+    // --- Status badge color helper ---
+    function statusBadgeClasses(status) {
+      switch (status) {
+        case 'PRESENT': return 'bg-emerald-950 text-emerald-400 border border-emerald-800';
+        case 'WFH':     return 'bg-sky-950 text-sky-400 border border-sky-800';
+        case 'ON_DUTY': return 'bg-blue-950 text-blue-400 border border-blue-800';
+        case 'LEAVE':   return 'bg-purple-950 text-purple-400 border border-purple-800';
+        case 'ABSENT':  return 'bg-rose-950 text-rose-400 border border-rose-800';
+        default:        return 'bg-slate-800 text-slate-400 border border-slate-700';
+      }
+    }
+
+    // --- Attendance table with filtering + pagination ---
+    function getFilteredAttendance() {
+      let filtered = [...state.attendanceLogs];
+
+      if (state.searchQuery) {
+        const q = state.searchQuery.toLowerCase();
+        filtered = filtered.filter(r => {
+          const emp = state.employees.find(e => e.emp_code === r.emp_code);
+          return r.emp_code.toLowerCase().includes(q) ||
+                 (emp && emp.name.toLowerCase().includes(q));
+        });
+      }
+
+      if (state.filterDept) {
+        filtered = filtered.filter(r => {
+          const emp = state.employees.find(e => e.emp_code === r.emp_code);
+          return emp && emp.department === state.filterDept;
+        });
+      }
+
+      if (state.filterStatus) {
+        filtered = filtered.filter(r => r.status === state.filterStatus);
+      }
+
+      return filtered;
+    }
+
     function renderRecentAttendance() {
       const tbody = document.getElementById('attendanceTbody');
-      const recs = state.attendanceLogs.slice(0, 5);
-      tbody.innerHTML = recs.map(r => `
-        <tr class="hover:bg-slate-800/40 transition">
+      const filtered = getFilteredAttendance();
+      const display = state.showAllRecords ? filtered : filtered.slice(0, state.PAGE_SIZE);
+
+      // Update record count badge
+      document.getElementById('recordCountBadge').innerText =
+        `Showing ${display.length} of ${filtered.length}${filtered.length < state.attendanceLogs.length ? ` (filtered from ${state.attendanceLogs.length})` : ''}`;
+
+      // Show/hide "Show More" button
+      const btnMore = document.getElementById('btnShowMore');
+      if (filtered.length > state.PAGE_SIZE) {
+        btnMore.classList.remove('hidden');
+        btnMore.innerText = state.showAllRecords ? `Show Less (top ${state.PAGE_SIZE})` : `Show All ${filtered.length} Records`;
+      } else {
+        btnMore.classList.add('hidden');
+      }
+
+      if (display.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-500">No records match the current filters.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = display.map(r => {
+        const emp = state.employees.find(e => e.emp_code === r.emp_code);
+        return `
+        <tr class="hover:bg-slate-800/40 transition cursor-pointer" onclick="openCorrectionForRow('${r.emp_code}','${r.date}')">
           <td class="py-2.5 text-slate-300">${r.date}</td>
           <td class="py-2.5 text-indigo-300 font-bold">${r.emp_code}</td>
+          <td class="py-2.5 text-slate-200">${emp ? emp.name : '--'}</td>
+          <td class="py-2.5 text-slate-400">${emp ? emp.department : '--'}</td>
           <td class="py-2.5">
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-              r.status === 'PRESENT' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
-              r.status === 'WFH' ? 'bg-sky-950 text-sky-400 border border-sky-800' :
-              'bg-rose-950 text-rose-400 border border-rose-800'
-            }">${r.status}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusBadgeClasses(r.status)}">${r.status}</span>
           </td>
-          <td class="py-2.5 text-slate-300">${formatEpochTime(r.punch_in)}</td>
-          <td class="py-2.5 text-slate-300">${formatEpochTime(r.punch_out)}</td>
-          <td class="py-2.5 text-right font-bold text-white">${r.work_hours !== null && r.work_hours !== undefined ? r.work_hours + 'h' : '--'}</td>
+          <td class="py-2.5 text-slate-300">${formatPunchTime(r.punch_in)}</td>
+          <td class="py-2.5 text-slate-300">${formatPunchTime(r.punch_out)}</td>
+          <td class="py-2.5 text-right font-bold text-white">${r.work_hours != null ? r.work_hours + 'h' : '--'}</td>
         </tr>
-      `).join('');
+      `;}).join('');
+    }
+
+    function openCorrectionForRow(empCode, date) {
+      document.getElementById('modalEmpCode').value = empCode;
+      document.getElementById('modalDate').value = date;
+      document.getElementById('correctionModal').classList.remove('hidden');
     }
 
     function renderLeaderboard() {
       const tbody = document.getElementById('leaderboardTbody');
       const list = Array.isArray(state.leaderboard) ? state.leaderboard : (state.leaderboard?.items || []);
       const items = list.slice(0, 5);
+
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-500">No tardiness data.</td></tr>';
+        return;
+      }
+
       tbody.innerHTML = items.map((r, i) => `
         <tr class="hover:bg-slate-800/40 transition">
           <td class="py-2 font-bold ${i === 0 ? 'text-amber-400' : 'text-slate-400'}">#${r.rank || (i + 1)}</td>
@@ -1002,93 +1299,222 @@
       `).join('');
     }
 
-    function updateKPICards() {
-      const activeCount = state.attendanceLogs.filter(a => a.punch_in && !a.punch_out).length;
-      document.getElementById('kpiActiveShifts').innerHTML = `${activeCount} <span class="text-xs text-slate-400 font-sans">/ ${state.employees.length} online</span>`;
+    // =========================================================================
+    // 10. FILTER & PAGINATION HANDLERS
+    // =========================================================================
+    function onFilterChange() {
+      state.searchQuery = document.getElementById('searchInput').value;
+      state.filterDept = document.getElementById('filterDept').value;
+      state.filterStatus = document.getElementById('filterStatus').value;
+      state.showAllRecords = false;
+      renderRecentAttendance();
     }
 
-    // -------------------------------------------------------------------------
-    // 8. CHART.JS ANALYTICS PIPELINE CHARTS (FEATURE #3)
-    // -------------------------------------------------------------------------
-    function initCharts() {
-      // 1. Trend Line Chart
-      const ctxTrend = document.getElementById('trendChart').getContext('2d');
-      const labels = ['Oct 01', 'Oct 03', 'Oct 05', 'Oct 07', 'Oct 09', 'Oct 11', 'Oct 13', 'Oct 15'];
-      state.trendChart = new Chart(ctxTrend, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: 'Present Workforce',
-              data: [22, 23, 21, 24, 23, 22, 24, 23],
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              tension: 0.35,
-              fill: true,
-              pointRadius: 3
-            },
-            {
-              label: 'Late Count ($gt 0)',
-              data: [3, 4, 2, 5, 1, 3, 2, 1],
-              borderColor: '#f59e0b',
-              backgroundColor: 'transparent',
-              tension: 0.35,
-              borderDash: [4, 4],
-              pointRadius: 2
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } } } },
-          scales: {
-            x: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-            y: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, beginAtZero: true }
-          }
-        }
+    function clearFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterDept').value = '';
+      document.getElementById('filterStatus').value = '';
+      state.searchQuery = '';
+      state.filterDept = '';
+      state.filterStatus = '';
+      state.showAllRecords = false;
+      renderRecentAttendance();
+    }
+
+    function toggleShowAll() {
+      state.showAllRecords = !state.showAllRecords;
+      renderRecentAttendance();
+    }
+
+    // =========================================================================
+    // 11. CSV EXPORT
+    // =========================================================================
+    function exportCSV() {
+      const filtered = getFilteredAttendance();
+      const headers = ['Date', 'Emp Code', 'Name', 'Department', 'Status', 'Punch In', 'Punch Out', 'Work Hours'];
+      const rows = filtered.map(r => {
+        const emp = state.employees.find(e => e.emp_code === r.emp_code);
+        return [
+          r.date,
+          r.emp_code,
+          emp ? emp.name : '--',
+          emp ? emp.department : '--',
+          r.status,
+          formatPunchTime(r.punch_in),
+          formatPunchTime(r.punch_out),
+          r.work_hours != null ? r.work_hours : '--'
+        ].join(',');
       });
 
-      // 2. Department Breakdown Bar Chart
-      const ctxDept = document.getElementById('deptChart').getContext('2d');
-      state.deptChart = new Chart(ctxDept, {
-        type: 'bar',
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV Exported', `${filtered.length} records downloaded.`);
+    }
+
+    // =========================================================================
+    // 12. CHART.JS ANALYTICS - ALL DRIVEN BY LIVE DATA
+    // =========================================================================
+    const CHART_COLORS = {
+      emerald: '#10b981', amber: '#f59e0b', rose: '#f43f5e',
+      indigo: '#6366f1', sky: '#0ea5e9', purple: '#a855f7',
+      teal: '#14b8a6', orange: '#f97316', lime: '#84cc16',
+    };
+
+    function initCharts() {
+      const sharedScales = {
+        x: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, beginAtZero: true }
+      };
+      const legendStyle = { labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } } };
+
+      // 1. Trend Line Chart (placeholder data, updated in updateCharts)
+      const ctxTrend = document.getElementById('trendChart').getContext('2d');
+      state.trendChart = new Chart(ctxTrend, {
+        type: 'line',
+        data: { labels: [], datasets: [
+          { label: 'Present Workforce', data: [], borderColor: CHART_COLORS.emerald, backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.35, fill: true, pointRadius: 3 },
+          { label: 'Absent Count', data: [], borderColor: CHART_COLORS.rose, backgroundColor: 'transparent', tension: 0.35, borderDash: [4, 4], pointRadius: 2 }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: legendStyle }, scales: sharedScales }
+      });
+
+      // 2. Status Donut Chart
+      const ctxDonut = document.getElementById('donutChart').getContext('2d');
+      state.donutChart = new Chart(ctxDonut, {
+        type: 'doughnut',
         data: {
-          labels: ['Eng', 'Sales', 'Supp', 'Prod', 'HR', 'Ops'],
-          datasets: [{
-            label: 'Attendance Rate %',
-            data: [98, 92, 88, 95, 96, 94],
-            backgroundColor: [
-              'rgba(99, 102, 241, 0.75)',
-              'rgba(16, 185, 129, 0.75)',
-              'rgba(244, 63, 94, 0.75)',
-              'rgba(14, 165, 233, 0.75)',
-              'rgba(168, 85, 247, 0.75)',
-              'rgba(245, 158, 11, 0.75)'
-            ],
-            borderRadius: 8
+          labels: ['Present', 'WFH', 'On Duty', 'Leave', 'Absent'],
+          datasets: [{ data: [0, 0, 0, 0, 0],
+            backgroundColor: [CHART_COLORS.emerald, CHART_COLORS.sky, CHART_COLORS.indigo, CHART_COLORS.purple, CHART_COLORS.rose],
+            borderWidth: 0, hoverOffset: 8
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false, cutout: '65%',
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // 3. Department Breakdown Bar Chart
+      const ctxDept = document.getElementById('deptChart').getContext('2d');
+      state.deptChart = new Chart(ctxDept, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Attendance Rate %', data: [],
+          backgroundColor: [
+            'rgba(99,102,241,0.75)', 'rgba(16,185,129,0.75)', 'rgba(244,63,94,0.75)',
+            'rgba(14,165,233,0.75)', 'rgba(168,85,247,0.75)', 'rgba(245,158,11,0.75)',
+            'rgba(20,184,166,0.75)', 'rgba(132,204,22,0.75)', 'rgba(249,115,22,0.75)'
+          ],
+          borderRadius: 8
+        }]},
+        options: {
+          responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
             x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-            y: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, min: 50, max: 100 }
+            y: { grid: { color: 'rgba(51,65,85,0.3)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, min: 0, max: 100 }
           }
         }
       });
     }
 
+    function updateCharts() {
+      // --- Trend Chart: group attendance by date ---
+      const dateCounts = {};
+      state.attendanceLogs.forEach(a => {
+        if (!a.date) return;
+        if (!dateCounts[a.date]) dateCounts[a.date] = { present: 0, absent: 0 };
+        if (a.status === 'ABSENT') dateCounts[a.date].absent++;
+        else dateCounts[a.date].present++;
+      });
+      const sortedDates = Object.keys(dateCounts).sort();
+      // Take last 30 data points
+      const trendDates = sortedDates.slice(-30);
+      const trendLabels = trendDates.map(d => {
+        const dt = new Date(d + 'T00:00:00');
+        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+      const presentData = trendDates.map(d => dateCounts[d].present);
+      const absentData = trendDates.map(d => dateCounts[d].absent);
+
+      state.trendChart.data.labels = trendLabels;
+      state.trendChart.data.datasets[0].data = presentData;
+      state.trendChart.data.datasets[1].data = absentData;
+      state.trendChart.update('none');
+
+      // --- Donut Chart: status breakdown ---
+      const statusMap = { PRESENT: 0, WFH: 0, ON_DUTY: 0, LEAVE: 0, ABSENT: 0 };
+      state.attendanceLogs.forEach(a => {
+        const s = a.status || 'ABSENT';
+        if (statusMap.hasOwnProperty(s)) statusMap[s]++;
+        else statusMap['ABSENT']++;
+      });
+
+      state.donutChart.data.datasets[0].data = [statusMap.PRESENT, statusMap.WFH, statusMap.ON_DUTY, statusMap.LEAVE, statusMap.ABSENT];
+      state.donutChart.update('none');
+
+      // Donut legend
+      const legendEl = document.getElementById('donutLegend');
+      const legendColors = [CHART_COLORS.emerald, CHART_COLORS.sky, CHART_COLORS.indigo, CHART_COLORS.purple, CHART_COLORS.rose];
+      const legendLabels = ['Present', 'WFH', 'On Duty', 'Leave', 'Absent'];
+      const legendVals = [statusMap.PRESENT, statusMap.WFH, statusMap.ON_DUTY, statusMap.LEAVE, statusMap.ABSENT];
+      legendEl.innerHTML = legendLabels.map((l, i) =>
+        `<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full" style="background:${legendColors[i]}"></span>${l}: ${legendVals[i]}</span>`
+      ).join('');
+
+      // --- Department Bar Chart ---
+      if (state.deptSummary.length > 0) {
+        // Use API-provided department summary
+        const deptLabels = state.deptSummary.map(d => d.department || d._id || '--');
+        const deptRates = state.deptSummary.map(d => {
+          if (d.attendance_rate != null) return d.attendance_rate;
+          if (d.present_count != null && d.total_count != null && d.total_count > 0)
+            return parseFloat(((d.present_count / d.total_count) * 100).toFixed(1));
+          return 0;
+        });
+        state.deptChart.data.labels = deptLabels;
+        state.deptChart.data.datasets[0].data = deptRates;
+      } else {
+        // Compute from employees + attendance
+        const depts = {};
+        state.employees.forEach(e => {
+          if (!depts[e.department]) depts[e.department] = { total: 0, present: 0 };
+        });
+        state.attendanceLogs.forEach(a => {
+          const emp = state.employees.find(e => e.emp_code === a.emp_code);
+          if (emp && depts[emp.department]) {
+            depts[emp.department].total++;
+            if (a.status !== 'ABSENT') depts[emp.department].present++;
+          }
+        });
+        const deptNames = Object.keys(depts).sort();
+        const deptRates = deptNames.map(d =>
+          depts[d].total > 0 ? parseFloat(((depts[d].present / depts[d].total) * 100).toFixed(1)) : 0
+        );
+        state.deptChart.data.labels = deptNames;
+        state.deptChart.data.datasets[0].data = deptRates;
+      }
+      state.deptChart.update('none');
+    }
+
+    // =========================================================================
+    // 13. TOAST NOTIFICATION
+    // =========================================================================
     function showToast(title, msg) {
       const box = document.getElementById('toastBox');
       document.getElementById('toastTitle').innerText = title;
       document.getElementById('toastMessage').innerText = msg;
       box.classList.remove('translate-y-32', 'opacity-0');
+      box.classList.add('pointer-events-auto');
       setTimeout(() => {
         box.classList.add('translate-y-32', 'opacity-0');
+        box.classList.remove('pointer-events-auto');
       }, 3500);
     }
   </script>
