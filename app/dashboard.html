@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workforce Attendance &amp; Analytics - Real-Time Dashboard</title>
+  <title>PulseHR — Real-Time Workforce Analytics System</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN for Analytics Aggregation Charts -->
@@ -46,12 +46,15 @@
   <!-- TOP NAVIGATION BAR -->
   <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-xl shadow-black/30">
     <div class="flex items-center gap-3.5">
-      <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 flex items-center justify-center font-extrabold text-white shadow-lg shadow-indigo-500/25 tracking-wider text-base">
-        HR
+      <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 flex items-center justify-center font-extrabold text-white shadow-lg shadow-indigo-500/25 tracking-wider text-xs">
+        PHR
       </div>
       <div>
         <div class="flex items-center gap-2.5">
-          <h1 class="text-base font-bold text-white tracking-tight">Workforce Attendance &amp; Analytics</h1>
+          <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            <span>PulseHR</span>
+            <span class="text-xs font-medium text-slate-400 font-mono tracking-normal hidden sm:inline">&bull; Workforce Analytics</span>
+          </h1>
           <span id="backendBadge" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5">
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span>
             <span id="backendBadgeText">DETECTING BACKEND...</span>
@@ -416,7 +419,7 @@
 
   <!-- Footer -->
   <footer class="border-t border-slate-800/60 py-3 px-6 text-center text-[11px] text-slate-500 font-mono">
-    <span>HROne Workforce Platform</span> &bull;
+    <span>PulseHR &bull; Real-Time Workforce Analytics Platform</span> &bull;
     <span id="footerDataSource">Real-time MongoDB Aggregation Engine</span> &bull;
     <span id="footerTimestamp">--</span>
   </footer>

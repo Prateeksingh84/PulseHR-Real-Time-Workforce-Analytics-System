@@ -1,6 +1,8 @@
-# Employee Attendance & Analytics API
+# PulseHR — Real-Time Workforce Analytics System
 
-A FastAPI and MongoDB service for tracking employee attendance, punch-in/out business rules, audit trail regularizations, and reporting analytics powered by MongoDB aggregation pipelines.
+> **Enterprise Employee Attendance, Biometric Punch Lifecycle & MongoDB 7.0 Aggregation Analytics Platform**
+
+A production-grade FastAPI and MongoDB service for tracking employee attendance, punch-in/out business rules, cryptographic SHA-256 audit trail regularizations, real-time SSE push streams, and high-performance reporting analytics powered by MongoDB 7.0 aggregation pipelines.
 
 ## Tech Stack
 - **Language**: Python 3.11+

@@ -86,7 +86,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Employee Attendance & Analytics API",
+    title="PulseHR — Real-Time Workforce Analytics System",
+    description="Enterprise FastAPI + MongoDB 7.0 engine for real-time employee attendance tracking, biometric punch-in/out lifecycle, SHA-256 tamper-evident audit trails, and MongoDB aggregation analytics.",
     version="2.0.0",
     lifespan=lifespan,
 )
