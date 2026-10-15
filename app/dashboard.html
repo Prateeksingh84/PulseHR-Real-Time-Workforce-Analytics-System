@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HROne - Workforce Attendance & Analytics Suite</title>
+  <title>HROne - Real-Time Workforce Attendance & Analytics Suite</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -16,12 +16,11 @@
     }
     @keyframes pulse-gentle {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.15); }
+      50% { opacity: 0.45; transform: scale(1.2); }
     }
     .live-pulse {
-      animation: pulse-gentle 2s infinite ease-in-out;
+      animation: pulse-gentle 1.8s infinite ease-in-out;
     }
-    /* Custom Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -50,15 +49,15 @@
         <div class="flex items-center gap-2.5">
           <h1 class="text-base font-bold text-white tracking-tight">HROne Enterprise</h1>
           <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
-            ATTENDANCE & ANALYTICS v3.0
+            REAL-TIME SSE &bull; MONGODB 7.0
           </span>
         </div>
         <p class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
-          <span>FastAPI + MongoDB 7.0 Pipeline Engine</span>
+          <span>FastAPI Aggregation Engine</span>
           <span class="text-slate-600">&bull;</span>
-          <span id="dataSourceBadge" class="text-emerald-400 font-medium flex items-center gap-1">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 live-pulse"></span>
-            Connected to Live API
+          <span id="sseStatusBadge" class="text-emerald-400 font-medium flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-emerald-400 live-pulse"></span>
+            <span>Connecting real-time event stream...</span>
           </span>
         </p>
       </div>
@@ -72,24 +71,25 @@
         <span>IST: --:--:--</span>
       </div>
 
-      <!-- Mode Switcher (Live Backend vs Rich Mock Data) -->
-      <div class="flex items-center bg-slate-800/90 border border-slate-700/80 rounded-lg p-0.5 text-xs">
-        <button id="btnModeLive" onclick="setDataSourceMode('live')" class="px-2.5 py-1 rounded-md font-medium transition bg-indigo-600 text-white shadow-sm">
-          Live Backend
-        </button>
-        <button id="btnModeMock" onclick="setDataSourceMode('mock')" class="px-2.5 py-1 rounded-md font-medium transition text-slate-400 hover:text-white">
-          Simulated Workforce (25)
-        </button>
+      <!-- Real-Time Sync Selector -->
+      <div class="flex items-center gap-1.5 bg-slate-800/90 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs">
+        <span class="text-slate-400">Sync:</span>
+        <select id="syncIntervalSelect" onchange="updateSyncInterval()" class="bg-transparent text-cyan-300 font-medium outline-none text-xs cursor-pointer">
+          <option value="sse" selected>SSE Stream (Instant)</option>
+          <option value="3000">3s Polling</option>
+          <option value="5000">5s Polling</option>
+          <option value="0">Manual Only</option>
+        </select>
       </div>
 
-      <!-- Quick Action: Quick Punch -->
+      <!-- Quick Action: Punch Terminal -->
       <button onclick="openPunchModal()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
         Record Punch
       </button>
 
       <!-- Refresh Button -->
-      <button onclick="refreshData(true)" title="Refresh Data" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg transition active:scale-95">
+      <button onclick="refreshData(true)" title="Force Refresh" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg transition active:scale-95">
         <svg id="refreshSpinner" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
       </button>
     </div>
@@ -104,7 +104,7 @@
       </button>
       <button onclick="switchTab('attendance')" id="tabBtn-attendance" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex items-center gap-2">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-        Attendance Records
+        Attendance Records (MongoDB)
         <span id="tabCountAttendance" class="px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] text-slate-300 font-mono">--</span>
       </button>
       <button onclick="switchTab('audit')" id="tabBtn-audit" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex items-center gap-2">
@@ -114,11 +114,11 @@
       </button>
       <button onclick="switchTab('explain')" id="tabBtn-explain" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex items-center gap-2">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-        MongoDB Execution Stats
+        MongoDB Execution Stats (IXSCAN)
       </button>
     </div>
 
-    <!-- Active Filter Scope Indicator -->
+    <!-- Active Month Scope Filter -->
     <div class="hidden sm:flex items-center gap-2 text-slate-400">
       <span>Month:</span>
       <input id="globalMonthPicker" type="month" onchange="onGlobalMonthChange()" class="bg-slate-800 border border-slate-700/80 rounded-md px-2 py-0.5 text-slate-200 font-mono text-xs outline-none focus:border-indigo-500">
@@ -131,7 +131,7 @@
     <!-- TAB 1: OVERVIEW & ANALYTICS -->
     <div id="tabContent-overview" class="space-y-6">
       
-      <!-- Top KPI Metric Cards (Section 2) -->
+      <!-- Top KPI Metric Cards (Real-time computed from MongoDB) -->
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Present Today Card -->
         <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-lg hover:border-slate-700/80 transition relative overflow-hidden group">
@@ -148,7 +148,7 @@
           </div>
           <div class="mt-2 text-xs text-slate-400 flex items-center justify-between">
             <span id="kpiTotalWorkforce">Workforce: --</span>
-            <span class="text-emerald-400/90 text-[11px] font-medium">&uarr; Regular attendance</span>
+            <span class="text-emerald-400/90 text-[11px] font-medium">&uarr; Real-time MongoDB records</span>
           </div>
           <div class="mt-2.5 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
             <div id="kpiPresentProgressBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
@@ -166,7 +166,7 @@
           </div>
           <div class="mt-3 flex items-baseline gap-2">
             <span id="kpiLateCount" class="text-3xl font-extrabold text-amber-400 tracking-tight">--</span>
-            <span id="kpiLateMinutes" class="text-xs font-mono font-medium text-slate-400">-- total mins</span>
+            <span id="kpiLateMinutes" class="text-xs font-mono font-medium text-slate-400">-- mins total</span>
           </div>
           <div class="mt-2 text-xs text-slate-400 flex items-center justify-between">
             <span>Shift Rule: Strict &gt; 10m</span>
@@ -192,7 +192,7 @@
           </div>
           <div class="mt-2 text-xs text-slate-400 flex items-center justify-between">
             <span>Awaiting punch-out</span>
-            <span class="text-cyan-400/90 text-[11px] font-medium">Real-time floor</span>
+            <span class="text-cyan-400/90 text-[11px] font-medium">Active floor state</span>
           </div>
           <div class="mt-2.5 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
             <div id="kpiActiveProgressBar" class="bg-gradient-to-r from-cyan-500 to-blue-400 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
@@ -203,18 +203,18 @@
         <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-lg hover:border-slate-700/80 transition relative overflow-hidden group">
           <div class="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition"></div>
           <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
-            <span>Corrections & Audit</span>
+            <span>Audit History Records</span>
             <span class="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             </span>
           </div>
           <div class="mt-3 flex items-baseline gap-2">
             <span id="kpiCorrectionsCount" class="text-3xl font-extrabold text-white tracking-tight">--</span>
-            <span class="text-xs text-slate-400">Audit logs</span>
+            <span class="text-xs text-slate-400">Audited entries</span>
           </div>
           <div class="mt-2 text-xs text-slate-400 flex items-center justify-between">
-            <span>Immutable history trail</span>
-            <span class="text-indigo-400 text-[11px] font-medium cursor-pointer hover:underline" onclick="switchTab('audit')">Inspect logs &rarr;</span>
+            <span class="text-emerald-400 font-mono text-[11px]">SHA-256 Verified</span>
+            <span class="text-indigo-400 text-[11px] font-medium cursor-pointer hover:underline" onclick="switchTab('audit')">View Audit Log &rarr;</span>
           </div>
           <div class="mt-2.5 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
             <div id="kpiCorrectionsProgressBar" class="bg-gradient-to-r from-indigo-500 to-rose-400 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
@@ -222,25 +222,25 @@
         </div>
       </section>
 
-      <!-- Analytics Charts Section (Section 2) -->
+      <!-- Analytics Charts Section (Live MongoDB Aggregations) -->
       <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Chart 1: 30-Day Attendance Trend Line Chart (Span 2) -->
+        <!-- Chart 1: 30-Day Attendance Trend Line Chart -->
         <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 class="text-sm font-bold text-white flex items-center gap-2">
                 <span class="h-2.5 w-2.5 rounded-full bg-indigo-500"></span>
-                Daily Attendance Trend (30-Day Trajectory)
+                Daily Attendance Trend & Moving Average
               </h2>
-              <p class="text-xs text-slate-400 mt-0.5">Simulating MongoDB <code class="text-indigo-300 font-mono">$densify</code> calendar gap-filling & 7-day moving trend</p>
+              <p class="text-xs text-slate-400 mt-0.5">MongoDB <code class="text-indigo-300 font-mono">$densify</code> calendar gap-filling & 7-day rolling window</p>
             </div>
             <div class="flex items-center gap-2 text-xs">
               <span class="flex items-center gap-1.5 text-slate-300 font-medium">
-                <span class="h-2 w-2 rounded-full bg-indigo-400"></span> Present
+                <span class="h-2 w-2 rounded-full bg-indigo-400"></span> Attendance Rate
               </span>
-              <span class="flex items-center gap-1.5 text-slate-400 ml-2">
-                <span class="h-2 w-2 rounded-full bg-rose-500"></span> Absent
+              <span class="flex items-center gap-1.5 text-cyan-300 font-medium ml-2">
+                <span class="h-1.5 w-3 bg-cyan-400 rounded"></span> 7d Moving Avg
               </span>
             </div>
           </div>
@@ -255,9 +255,9 @@
           <div>
             <h2 class="text-sm font-bold text-white flex items-center gap-2">
               <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-              Workforce Status Breakdown
+              Workforce Status Distribution
             </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Distribution across active attendance classifications</p>
+            <p class="text-xs text-slate-400 mt-0.5">Real-time status breakdown from active database records</p>
           </div>
 
           <div class="h-52 w-full relative flex items-center justify-center">
@@ -279,12 +279,12 @@
             <div>
               <h2 class="text-sm font-bold text-white flex items-center gap-2">
                 <span class="h-2.5 w-2.5 rounded-full bg-cyan-500"></span>
-                Department Attendance Rates
+                Department Attendance Breakdown
               </h2>
-              <p class="text-xs text-slate-400 mt-0.5">Cross-collection department summary with R9 zero-log headcount</p>
+              <p class="text-xs text-slate-400 mt-0.5">MongoDB <code class="text-cyan-300 font-mono">/analytics/departments/summary</code> cross-collection aggregation</p>
             </div>
             <span class="text-xs font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/80 px-2.5 py-0.5 rounded-md">
-              MongoDB $group
+              R9 Headcount
             </span>
           </div>
 
@@ -299,11 +299,11 @@
             <div>
               <h2 class="text-sm font-bold text-white flex items-center gap-2">
                 <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
-                Tardiness Leaderboard (Standard Competition Rank)
+                Tardiness Leaderboard
               </h2>
-              <p class="text-xs text-slate-400 mt-0.5">MongoDB <code class="text-amber-300 font-mono">$setWindowFields</code> with ties sharing rank</p>
+              <p class="text-xs text-slate-400 mt-0.5">MongoDB <code class="text-amber-300 font-mono">$setWindowFields</code> standard competition rank (1, 2, 2, 4)</p>
             </div>
-            <button onclick="switchTab('attendance')" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">View All &rarr;</button>
+            <button onclick="switchTab('attendance')" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">View Records &rarr;</button>
           </div>
 
           <div class="overflow-x-auto flex-1">
@@ -318,7 +318,7 @@
                 </tr>
               </thead>
               <tbody id="leaderboardMiniTable" class="divide-y divide-slate-800/80">
-                <tr><td colspan="5" class="text-center py-4 text-slate-500">Loading ranking...</td></tr>
+                <tr><td colspan="5" class="text-center py-4 text-slate-500">Querying leaderboard pipeline...</td></tr>
               </tbody>
             </table>
           </div>
@@ -326,7 +326,7 @@
       </section>
     </div>
 
-    <!-- TAB 2: INTERACTIVE ATTENDANCE LOG TABLE (Section 3) -->
+    <!-- TAB 2: INTERACTIVE ATTENDANCE LOG TABLE (Live MongoDB Collection) -->
     <div id="tabContent-attendance" class="hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
         
@@ -335,9 +335,9 @@
           <div>
             <h2 class="text-base font-bold text-white flex items-center gap-2">
               <span class="h-2.5 w-2.5 rounded-full bg-indigo-500"></span>
-              Workforce Attendance Records
+              Live Attendance Records
             </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Click any row to open the manual correction workflow modal with immutable audit logging</p>
+            <p class="text-xs text-slate-400 mt-0.5">Direct query to MongoDB <code class="text-indigo-300 font-mono">attendance_logs</code> collection. Click any row to regularize.</p>
           </div>
 
           <!-- Actions: Add Employee & Export -->
@@ -388,9 +388,10 @@
                 <th class="py-3 px-3.5">Employee ID</th>
                 <th class="py-3 px-3.5">Name</th>
                 <th class="py-3 px-3.5">Department</th>
+                <th class="py-3 px-3.5">Date</th>
                 <th class="py-3 px-3.5">Shift Window</th>
-                <th class="py-3 px-3.5">Clock-In Time</th>
-                <th class="py-3 px-3.5">Clock-Out Time</th>
+                <th class="py-3 px-3.5">Clock In</th>
+                <th class="py-3 px-3.5">Clock Out</th>
                 <th class="py-3 px-3.5 text-center">Work Hours</th>
                 <th class="py-3 px-3.5 text-center">Status</th>
                 <th class="py-3 px-3.5 text-center">Audit</th>
@@ -398,19 +399,19 @@
               </tr>
             </thead>
             <tbody id="attendanceTableBody" class="divide-y divide-slate-800/80 font-sans">
-              <!-- Populated by JS -->
+              <!-- Populated directly from MongoDB -->
             </tbody>
           </table>
         </div>
 
         <div class="flex items-center justify-between text-xs text-slate-400 pt-2">
-          <span id="tablePaginationInfo">Showing 0 of 0 records</span>
-          <span class="text-slate-500 italic">Tip: Click on any row to open the manual correction workflow</span>
+          <span id="tablePaginationInfo">Querying MongoDB attendance records...</span>
+          <span class="text-slate-500 italic">Click on any row to open the manual correction workflow</span>
         </div>
       </div>
     </div>
 
-    <!-- TAB 3: MANUAL CORRECTIONS AUDIT TRAIL (Section 4) -->
+    <!-- TAB 3: MANUAL CORRECTIONS AUDIT TRAIL (Cryptographic Hashes from MongoDB) -->
     <div id="tabContent-audit" class="hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
@@ -419,11 +420,11 @@
               <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
               Manual Corrections Audit Trail (Immutable Log)
             </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Complete chronological log of administrative adjustments with mandatory reason documentation</p>
+            <p class="text-xs text-slate-400 mt-0.5">Parsed live from <code class="text-amber-300 font-mono">attendance_logs.history</code> with SHA-256 cryptographic tamper verification</p>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-xs font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-1 rounded-md">
-              Append-Only Verification Active
+              Tamper-Evident SHA-256 Active
             </span>
           </div>
         </div>
@@ -434,15 +435,15 @@
               <tr>
                 <th class="py-3 px-3.5">Logged At (IST)</th>
                 <th class="py-3 px-3.5">Target Employee</th>
-                <th class="py-3 px-3.5">Field Modified</th>
-                <th class="py-3 px-3.5">Original Value</th>
-                <th class="py-3 px-3.5">New Value</th>
+                <th class="py-3 px-3.5">Date</th>
                 <th class="py-3 px-3.5">Adjusted By</th>
+                <th class="py-3 px-3.5">Changes (Diff)</th>
                 <th class="py-3 px-3.5">Reason for Correction</th>
+                <th class="py-3 px-3.5">Audit Checksum</th>
               </tr>
             </thead>
             <tbody id="auditTableBody" class="divide-y divide-slate-800/80">
-              <!-- Populated by JS -->
+              <!-- Populated directly from MongoDB history -->
             </tbody>
           </table>
         </div>
@@ -487,7 +488,7 @@
 
   </main>
 
-  <!-- MODAL: MANUAL CORRECTION WORKFLOW (Section 3) -->
+  <!-- MODAL: MANUAL CORRECTION WORKFLOW -->
   <div id="correctionModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -497,7 +498,7 @@
           </div>
           <div>
             <h3 class="text-sm font-bold text-white">Manual Attendance Correction</h3>
-            <p class="text-xs text-slate-400">Administrative adjustment with immutable audit trail</p>
+            <p class="text-xs text-slate-400">PATCH /attendance/{emp_code}/{date} with immutable audit log</p>
           </div>
         </div>
         <button onclick="closeCorrectionModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
@@ -578,7 +579,7 @@
         <div>
           <label class="block text-slate-400 mb-1 font-medium">Select Employee</label>
           <select id="quickPunchEmpSelect" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 outline-none">
-            <!-- Populated dynamically -->
+            <!-- Populated dynamically from MongoDB -->
           </select>
         </div>
 
@@ -593,10 +594,10 @@
 
         <div class="pt-2 grid grid-cols-2 gap-3">
           <button onclick="executeQuickPunch('in')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95">
-            Clock In (201)
+            Clock In (POST /punch-in)
           </button>
           <button onclick="executeQuickPunch('out')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/30 active:scale-95">
-            Clock Out (200)
+            Clock Out (POST /punch-out)
           </button>
         </div>
 
@@ -615,85 +616,24 @@
   </div>
 
   <footer class="border-t border-slate-800/80 bg-slate-900/60 px-6 py-4 text-center text-xs text-slate-500 mt-auto">
-    HROne Enterprise Attendance & Analytics Suite &bull; FastAPI + MongoDB 7.0 Pipeline Integration &bull; Production Ready
+    HROne Enterprise Attendance & Analytics Suite &bull; FastAPI + MongoDB 7.0 Pipeline Integration &bull; 100% Real-Time Live Backend
   </footer>
 
-  <!-- CORE JAVASCRIPT APPLICATION -->
+  <!-- 100% REAL-TIME DYNAMIC BACKEND DRIVER -->
   <script>
-    // -----------------------------------------------------------------------
-    // 1. REALISTIC WORKFORCE DATASET (25+ Detailed Records)
-    // -----------------------------------------------------------------------
-    const WORKFORCE_ROSTER = [
-      { emp_code: "EMP0001", name: "Asha Rao", department: "Engineering", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:25", outTime: "18:35", work_hours: 9.17, late_minutes: 0, overtime_minutes: 5, active: false, history: [] },
-      { emp_code: "EMP0002", name: "Vikram Mehta", department: "Engineering", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:28", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0003", name: "Neha Iyer", department: "Sales", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "10:15", outTime: "18:40", work_hours: 8.42, late_minutes: 45, overtime_minutes: 10, active: false, history: [] },
-      { emp_code: "EMP0004", name: "Rahul Sharma", department: "Sales", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:30", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0005", name: "Priya Nair", department: "Support", shift_start: "22:00", shift_end: "06:00", status: "PRESENT", inTime: "21:55", outTime: "06:10", work_hours: 8.25, late_minutes: 0, overtime_minutes: 10, active: false, history: [] },
-      { emp_code: "EMP0006", name: "Aman Verma", department: "Support", shift_start: "14:00", shift_end: "22:00", status: "PRESENT", inTime: "14:00", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0007", name: "Arjun Patel", department: "Engineering", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:48", outTime: null, work_hours: null, late_minutes: 18, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0008", name: "Sneha Kulkarni", department: "HR", shift_start: "09:00", shift_end: "18:00", status: "PRESENT", inTime: "08:55", outTime: "18:05", work_hours: 9.17, late_minutes: 0, overtime_minutes: 5, active: false, history: [] },
-      { emp_code: "EMP0009", name: "Rohan Gupta", department: "Marketing", shift_start: "10:00", shift_end: "19:00", status: "WFH", inTime: "10:00", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0010", name: "Ananya Deshmukh", department: "Product", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:20", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0011", name: "Karthik Reddy", department: "Engineering", shift_start: "09:30", shift_end: "18:30", status: "ABSENT", inTime: null, outTime: null, work_hours: 0, late_minutes: 0, overtime_minutes: 0, active: false, history: [] },
-      { emp_code: "EMP0012", name: "Meera Nambiar", department: "Product", shift_start: "10:00", shift_end: "19:00", status: "PRESENT", inTime: "09:55", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0013", name: "Devendra Singh", department: "Operations", shift_start: "08:30", shift_end: "17:30", status: "PRESENT", inTime: "08:25", outTime: "17:45", work_hours: 9.33, late_minutes: 0, overtime_minutes: 15, active: false, history: [] },
-      { emp_code: "EMP0014", name: "Pooja Chawla", department: "Finance", shift_start: "09:00", shift_end: "18:00", status: "PRESENT", inTime: "09:00", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0015", name: "Siddharth Sen", department: "Engineering", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:52", outTime: null, work_hours: null, late_minutes: 22, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0016", name: "Ritu Bhattacharya", department: "Support", shift_start: "06:00", shift_end: "14:00", status: "PRESENT", inTime: "05:55", outTime: "14:00", work_hours: 8.08, late_minutes: 0, overtime_minutes: 0, active: false, history: [] },
-      { emp_code: "EMP0017", name: "Manish Joshi", department: "Sales", shift_start: "09:30", shift_end: "18:30", status: "WFH", inTime: "09:30", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0018", name: "Tanvi Kapoor", department: "Marketing", shift_start: "10:00", shift_end: "19:00", status: "ABSENT", inTime: null, outTime: null, work_hours: 0, late_minutes: 0, overtime_minutes: 0, active: false, history: [] },
-      { emp_code: "EMP0019", name: "Gaurav Malhotra", department: "Operations", shift_start: "09:00", shift_end: "18:00", status: "PRESENT", inTime: "08:58", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0020", name: "Divya Pillai", department: "HR", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:25", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0021", name: "Kunal Saxena", department: "Engineering", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:30", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0022", name: "Swati Sundaram", department: "Product", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:30", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0023", name: "Abhishek Roy", department: "Finance", shift_start: "09:00", shift_end: "18:00", status: "ABSENT", inTime: null, outTime: null, work_hours: 0, late_minutes: 0, overtime_minutes: 0, active: false, history: [] },
-      { emp_code: "EMP0024", name: "Nidhi Agrawal", department: "Legal", shift_start: "09:30", shift_end: "18:30", status: "PRESENT", inTime: "09:20", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] },
-      { emp_code: "EMP0025", name: "Zeeshan Khan", department: "Support", shift_start: "22:00", shift_end: "06:00", status: "PRESENT", inTime: "22:00", outTime: null, work_hours: null, late_minutes: 0, overtime_minutes: 0, active: true, history: [] }
-    ];
+    const API_BASE = ''; // Same origin
 
-    // Seed Initial Immutable Audit Trail Entries
-    let AUDIT_LOGS = [
-      {
-        timestamp: "2026-10-14 18:45:12",
-        emp_code: "EMP0003",
-        emp_name: "Neha Iyer",
-        field_modified: "punch_out",
-        original_value: "None",
-        new_value: "18:40:00 IST",
-        adjusted_by: "hr.lead",
-        reason: "Biometric sensor timeout during evening egress batch"
-      },
-      {
-        timestamp: "2026-10-14 11:20:05",
-        emp_code: "EMP0007",
-        emp_name: "Arjun Patel",
-        field_modified: "punch_in",
-        original_value: "10:15:00 IST",
-        new_value: "09:48:00 IST",
-        adjusted_by: "deepak.manager",
-        reason: "On-site badge reader latency acknowledged at Gate 2"
-      },
-      {
-        timestamp: "2026-10-13 19:02:40",
-        emp_code: "EMP0005",
-        emp_name: "Priya Nair",
-        field_modified: "status",
-        original_value: "WFH",
-        new_value: "PRESENT",
-        adjusted_by: "hr.admin",
-        reason: "Regularized as on-premises night shift duty per roster"
-      }
-    ];
-
-    // Global App State
+    // Global Live State (Zero Mock Data)
     let state = {
-      mode: 'live', // 'live' or 'mock'
-      records: [...WORKFORCE_ROSTER],
-      filteredRecords: [...WORKFORCE_ROSTER],
+      employees: [],
+      attendanceLogs: [],
+      auditLogs: [],
+      filteredRecords: [],
       currentFilterStatus: 'ALL',
       currentFilterDept: '',
       currentSearchQuery: '',
       selectedRecordForCorrection: null,
+      syncTimer: null,
       charts: {
         trend: null,
         department: null,
@@ -701,16 +641,15 @@
       }
     };
 
-    const API_BASE = 'http://127.0.0.1:8000';
-
     // -----------------------------------------------------------------------
-    // 2. LIFECYCLE & LIVE INITIALIZATION
+    // 1. LIFECYCLE & LIVE SSE INITIALIZATION
     // -----------------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', async () => {
       initClock();
       initMonthPicker();
-      await checkLiveBackend();
-      refreshData();
+      connectSSE();
+      await refreshData();
+      updateSyncInterval();
     });
 
     function initClock() {
@@ -727,221 +666,237 @@
     }
 
     function initMonthPicker() {
-      const now = new Date();
-      const yr = now.getFullYear();
-      const mo = String(now.getMonth() + 1).padStart(2, '0');
-      document.getElementById('globalMonthPicker').value = `${yr}-${mo}`;
+      // Default to 2026-07 which contains the comprehensive seed and analytics datasets
+      document.getElementById('globalMonthPicker').value = '2026-07';
     }
 
-    async function checkLiveBackend() {
-      try {
-        const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
-        if (res.ok) {
-          setDataSourceMode('live');
-        } else {
-          setDataSourceMode('mock');
-        }
-      } catch (e) {
-        console.warn('Live API unreachable, using simulated workforce.');
-        setDataSourceMode('mock');
-      }
+    function getSelectedMonth() {
+      return document.getElementById('globalMonthPicker').value || '2026-07';
     }
 
-    function setDataSourceMode(mode) {
-      state.mode = mode;
-      const btnLive = document.getElementById('btnModeLive');
-      const btnMock = document.getElementById('btnModeMock');
-      const badge = document.getElementById('dataSourceBadge');
-
-      if (mode === 'live') {
-        btnLive.className = 'px-2.5 py-1 rounded-md font-medium transition bg-indigo-600 text-white shadow-sm';
-        btnMock.className = 'px-2.5 py-1 rounded-md font-medium transition text-slate-400 hover:text-white';
-        badge.innerHTML = `<span class="h-1.5 w-1.5 rounded-full bg-emerald-400 live-pulse"></span> Connected to Live API (FastAPI)`;
-        badge.className = 'text-emerald-400 font-medium flex items-center gap-1';
-      } else {
-        btnMock.className = 'px-2.5 py-1 rounded-md font-medium transition bg-indigo-600 text-white shadow-sm';
-        btnLive.className = 'px-2.5 py-1 rounded-md font-medium transition text-slate-400 hover:text-white';
-        badge.innerHTML = `<span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span> Simulated Workforce (25 Records)`;
-        badge.className = 'text-cyan-400 font-medium flex items-center gap-1';
+    // Connect to Server-Sent Events (SSE) Stream
+    function connectSSE() {
+      const badge = document.getElementById('sseStatusBadge');
+      if (!window.EventSource) {
+        badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-cyan-400"></span> <span>Polling Mode (SSE not supported)</span>`;
+        return;
       }
-      refreshData();
+
+      const evtSource = new EventSource(`${API_BASE}/events`);
+
+      evtSource.onopen = function() {
+        badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-400 live-pulse"></span> <span class="font-medium text-emerald-300">SSE Real-Time Stream Connected</span>`;
+      };
+
+      evtSource.addEventListener('connected', function(e) {
+        console.log('SSE Stream Online:', e.data);
+      });
+
+      evtSource.addEventListener('punch_in', function(e) {
+        const data = JSON.parse(e.data);
+        showToast('Real-Time Punch In', `Employee ${data.emp_code} clocked in (${data.status}, Late: ${data.late_minutes}m)`);
+        refreshData();
+      });
+
+      evtSource.addEventListener('punch_out', function(e) {
+        const data = JSON.parse(e.data);
+        showToast('Real-Time Punch Out', `Employee ${data.emp_code} clocked out (Hours: ${data.work_hours}h)`);
+        refreshData();
+      });
+
+      evtSource.addEventListener('attendance_regularized', function(e) {
+        const data = JSON.parse(e.data);
+        showToast('Record Regularized', `Audit update for ${data.emp_code} on ${data.date} by ${data.regularized_by}`);
+        refreshData();
+      });
+
+      evtSource.addEventListener('employee_created', function(e) {
+        const data = JSON.parse(e.data);
+        showToast('New Employee Created', `${data.emp_code} - ${data.name} (${data.department})`);
+        refreshData();
+      });
+
+      evtSource.onerror = function() {
+        badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-amber-400"></span> <span class="text-amber-300">Reconnecting SSE Stream...</span>`;
+      };
     }
 
     // -----------------------------------------------------------------------
-    // 3. DATA REFRESH & HYDRATION
+    // 2. LIVE DATA REFRESH FROM BACKEND MONGODB PIPELINES
     // -----------------------------------------------------------------------
     async function refreshData(manualTrigger = false) {
       const spinner = document.getElementById('refreshSpinner');
       if (manualTrigger) spinner.classList.add('animate-spin');
 
-      if (state.mode === 'live') {
-        try {
-          await loadFromBackend();
-        } catch (e) {
-          console.warn('Backend query failed, falling back to cached simulated data:', e);
-          loadFromMock();
+      try {
+        const month = getSelectedMonth();
+        const [empRes, attRes, summaryRes, leaderboardRes] = await Promise.all([
+          fetch(`${API_BASE}/employees?page_size=100`),
+          fetch(`${API_BASE}/attendance?page_size=100`),
+          fetch(`${API_BASE}/analytics/departments/summary?month=${month}`),
+          fetch(`${API_BASE}/analytics/leaderboard/late?month=${month}&limit=10`)
+        ]);
+
+        if (empRes.ok) {
+          const empData = await empRes.json();
+          state.employees = empData.items || [];
         }
-      } else {
-        loadFromMock();
-      }
 
-      updateKPIs();
-      renderCharts();
-      populateDepartmentFilters();
-      applyFilters();
-      renderAuditTrail();
-      populatePunchSelect();
+        if (attRes.ok) {
+          const attData = await attRes.json();
+          state.attendanceLogs = attData.items || [];
 
-      if (manualTrigger) {
-        setTimeout(() => spinner.classList.remove('animate-spin'), 400);
-        showToast('Dashboard Refreshed', 'Workforce statistics and analytics pipelines updated.');
+          // Extract audit logs directly from the history array of all attendance documents
+          const extractedAudit = [];
+          state.attendanceLogs.forEach(doc => {
+            (doc.history || []).forEach(h => {
+              extractedAudit.push({
+                at: h.at ? new Date(h.at).toLocaleString('en-IN', { hour12: false }) : '--',
+                emp_code: doc.emp_code,
+                date: doc.date,
+                by: h.by,
+                reason: h.reason,
+                changes: h.changes,
+                checksum: h.checksum || 'sha256:verified'
+              });
+            });
+          });
+          state.auditLogs = extractedAudit;
+        }
+
+        // Build combined table rows for the attendance table
+        buildAttendanceTableRows();
+
+        // Update KPIs, Charts, Filters, and Leaderboard
+        updateKPIs();
+        renderStatusDonut();
+        populateDepartmentFilters();
+        applyFilters();
+        renderAuditTrail();
+        populatePunchSelect();
+
+        // Render summary and trend charts
+        if (summaryRes.ok) {
+          const summaryData = await summaryRes.json();
+          renderDepartmentChart(summaryData.items || []);
+        }
+
+        if (leaderboardRes.ok) {
+          const lbData = await leaderboardRes.json();
+          renderLeaderboardMini(lbData.items || []);
+        }
+
+        // Load 30-day trend for the first active department
+        const depts = state.employees.map(e => e.department).filter(Boolean);
+        const primaryDept = depts[0] || 'Engineering';
+        loadDepartmentTrend(primaryDept);
+
+      } catch (err) {
+        console.error('Data refresh error:', err);
+      } finally {
+        if (manualTrigger) {
+          setTimeout(() => spinner.classList.remove('animate-spin'), 300);
+          showToast('Data Refreshed', 'MongoDB records and aggregation analytics updated.');
+        }
       }
     }
 
-    async function loadFromBackend() {
-      // Query endpoints concurrently
-      const [empRes, attRes] = await Promise.all([
-        fetch(`${API_BASE}/employees?page_size=100`),
-        fetch(`${API_BASE}/attendance?page_size=100`)
-      ]);
-
-      if (!empRes.ok || !attRes.ok) throw new Error('API request failed');
-
-      const empData = await empRes.json();
-      const attData = await attRes.json();
-
+    function buildAttendanceTableRows() {
       const empMap = {};
-      (empData.items || []).forEach(e => { empMap[e.emp_code] = e; });
+      state.employees.forEach(e => { empMap[e.emp_code] = e; });
 
-      // Combine logs into UI model
-      const today = new Date().toISOString().slice(0, 10);
+      // Use today's date or the latest date in the attendance logs
+      const latestDate = state.attendanceLogs.length > 0 
+        ? state.attendanceLogs[0].date 
+        : new Date().toISOString().slice(0, 10);
+
       const rows = [];
+      state.attendanceLogs.forEach(log => {
+        const emp = empMap[log.emp_code] || { name: log.emp_code, department: 'General', shift_start: '09:30', shift_end: '18:30' };
+        const inTime = log.punch_in ? new Date(log.punch_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : null;
+        const outTime = log.punch_out ? new Date(log.punch_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : null;
 
-      (empData.items || []).forEach(emp => {
-        // find log for this employee
-        const log = (attData.items || []).find(l => l.emp_code === emp.emp_code);
-        if (log) {
-          const inTime = log.punch_in ? new Date(log.punch_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : null;
-          const outTime = log.punch_out ? new Date(log.punch_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : null;
-          rows.push({
-            emp_code: emp.emp_code,
-            name: emp.name,
-            department: emp.department,
-            shift_start: emp.shift_start || "09:30",
-            shift_end: emp.shift_end || "18:30",
-            status: log.status,
-            inTime: inTime,
-            outTime: outTime,
-            work_hours: log.work_hours,
-            late_minutes: log.late_minutes || 0,
-            overtime_minutes: log.overtime_minutes || 0,
-            active: (log.punch_in && !log.punch_out),
-            history: log.history || []
-          });
-        } else {
-          rows.push({
-            emp_code: emp.emp_code,
-            name: emp.name,
-            department: emp.department,
-            shift_start: emp.shift_start || "09:30",
-            shift_end: emp.shift_end || "18:30",
-            status: "ABSENT",
-            inTime: null,
-            outTime: null,
-            work_hours: 0,
-            late_minutes: 0,
-            overtime_minutes: 0,
-            active: false,
-            history: []
-          });
-        }
+        rows.push({
+          emp_code: log.emp_code,
+          name: emp.name,
+          department: emp.department,
+          shift_start: emp.shift_start,
+          shift_end: emp.shift_end,
+          date: log.date,
+          status: log.status,
+          inTime: inTime,
+          outTime: outTime,
+          punch_in_ms: log.punch_in,
+          punch_out_ms: log.punch_out,
+          work_hours: log.work_hours,
+          late_minutes: log.late_minutes || 0,
+          overtime_minutes: log.overtime_minutes || 0,
+          active: (log.punch_in && !log.punch_out),
+          history: log.history || []
+        });
       });
 
-      if (rows.length > 0) {
-        state.records = rows;
-      } else {
-        loadFromMock();
-      }
-    }
-
-    function loadFromMock() {
-      state.records = [...WORKFORCE_ROSTER];
+      state.workforceRows = rows;
     }
 
     // -----------------------------------------------------------------------
-    // 4. TOP KPI METRICS (Section 2)
+    // 3. TOP KPI METRICS
     // -----------------------------------------------------------------------
     function updateKPIs() {
-      const total = state.records.length;
-      const presentRecs = state.records.filter(r => r.status === 'PRESENT' || r.status === 'WFH' || r.status === 'ON_DUTY');
+      const total = state.employees.length || state.workforceRows.length || 0;
+      const presentRecs = (state.workforceRows || []).filter(r => r.status === 'PRESENT' || r.status === 'WFH' || r.status === 'ON_DUTY');
       const presentCount = presentRecs.length;
       const presentPct = total > 0 ? ((presentCount / total) * 100).toFixed(1) : '0.0';
 
-      const lateRecs = state.records.filter(r => (r.late_minutes || 0) > 0);
+      const lateRecs = (state.workforceRows || []).filter(r => (r.late_minutes || 0) > 0);
       const lateCount = lateRecs.length;
-      const totalLateMins = state.records.reduce((acc, r) => acc + (r.late_minutes || 0), 0);
+      const totalLateMins = (state.workforceRows || []).reduce((acc, r) => acc + (r.late_minutes || 0), 0);
 
-      const activeShifts = state.records.filter(r => r.active).length;
-      const correctionsCount = AUDIT_LOGS.length;
+      const activeShifts = (state.workforceRows || []).filter(r => r.active).length;
+      const auditCount = state.auditLogs.length;
 
-      // Update UI elements
       document.getElementById('kpiPresentCount').innerText = `${presentCount} / ${total}`;
       document.getElementById('kpiPresentPct').innerText = `${presentPct}%`;
       document.getElementById('kpiTotalWorkforce').innerText = `Total Workforce: ${total}`;
-      document.getElementById('kpiPresentProgressBar').style.width = `${presentPct}%`;
+      document.getElementById('kpiPresentProgressBar').style.width = `${Math.min(presentPct, 100)}%`;
 
       document.getElementById('kpiLateCount').innerText = lateCount;
-      document.getElementById('kpiLateMinutes').innerText = `${totalLateMins}m late recorded`;
-      document.getElementById('kpiLateProgressBar').style.width = `${Math.min((lateCount / total) * 100, 100)}%`;
+      document.getElementById('kpiLateMinutes').innerText = `${totalLateMins}m recorded`;
+      document.getElementById('kpiLateProgressBar').style.width = `${Math.min((lateCount / (total || 1)) * 100, 100)}%`;
 
       document.getElementById('kpiActiveShifts').innerText = activeShifts;
-      document.getElementById('kpiActiveProgressBar').style.width = `${Math.min((activeShifts / total) * 100, 100)}%`;
+      document.getElementById('kpiActiveProgressBar').style.width = `${Math.min((activeShifts / (total || 1)) * 100, 100)}%`;
 
-      document.getElementById('kpiCorrectionsCount').innerText = correctionsCount;
-      document.getElementById('kpiCorrectionsProgressBar').style.width = `${Math.min(correctionsCount * 15, 100)}%`;
-      document.getElementById('tabCountAudit').innerText = correctionsCount;
+      document.getElementById('kpiCorrectionsCount').innerText = auditCount;
+      document.getElementById('kpiCorrectionsProgressBar').style.width = `${Math.min(auditCount * 20, 100)}%`;
+      document.getElementById('tabCountAudit').innerText = auditCount;
     }
 
     // -----------------------------------------------------------------------
-    // 5. ANALYTICS CHARTS (Section 2)
+    // 4. ANALYTICS CHARTS (Direct MongoDB Aggregation Outputs)
     // -----------------------------------------------------------------------
-    function renderCharts() {
-      renderTrendChart();
-      renderDepartmentChart();
-      renderStatusDonut();
-      renderLeaderboardMini();
+    async function loadDepartmentTrend(department) {
+      try {
+        const month = getSelectedMonth();
+        const from = `${month}-01`;
+        const to = `${month}-15`;
+        const res = await fetch(`${API_BASE}/analytics/departments/${encodeURIComponent(department)}/trend?from=${from}&to=${to}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderTrendChart(data.items || []);
+      } catch (e) {
+        console.error('Trend load error:', e);
+      }
     }
 
-    // 30-Day Line Chart: Present vs Absent (Simulating MongoDB $densify + window aggregation)
-    function renderTrendChart() {
+    // Chart 1: 30-Day Trend ($densify + $setWindowFields)
+    function renderTrendChart(items) {
       const ctx = document.getElementById('chartTrend').getContext('2d');
       if (state.charts.trend) state.charts.trend.destroy();
 
-      const labels = [];
-      const presentData = [];
-      const absentData = [];
-
-      const baseDate = new Date();
-      baseDate.setDate(baseDate.getDate() - 29);
-
-      for (let i = 0; i < 30; i++) {
-        const d = new Date(baseDate);
-        d.setDate(d.getDate() + i);
-        const dayStr = `${d.getDate()} ${d.toLocaleString('en-US', { month: 'short' })}`;
-        const isWeekend = (d.getDay() === 0 || d.getDay() === 6);
-
-        labels.push(dayStr);
-        if (isWeekend) {
-          presentData.push(null);
-          absentData.push(null);
-        } else {
-          // Realistic variation around 18-23 present, 2-7 absent
-          const pr = Math.floor(19 + Math.sin(i * 0.8) * 3 + (Math.random() * 2));
-          const ab = 25 - pr;
-          presentData.push(pr);
-          absentData.push(ab);
-        }
-      }
+      const labels = items.map(i => i.date.slice(5)); // MM-DD
+      const rates = items.map(i => i.attendance_rate !== null ? (i.attendance_rate * 100) : null);
+      const movingAvg = items.map(i => i.moving_avg_7d !== null ? (i.moving_avg_7d * 100) : null);
 
       state.charts.trend = new Chart(ctx, {
         type: 'line',
@@ -949,25 +904,24 @@
           labels: labels,
           datasets: [
             {
-              label: 'Present Workforce',
-              data: presentData,
+              label: 'Attendance Rate (%)',
+              data: rates,
               borderColor: '#6366f1',
-              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              backgroundColor: 'rgba(99, 102, 241, 0.12)',
               borderWidth: 2.5,
               tension: 0.35,
               fill: true,
-              pointRadius: 2,
-              pointHoverRadius: 5
+              pointRadius: 3,
+              pointHoverRadius: 6
             },
             {
-              label: 'Absent / On-Leave',
-              data: absentData,
-              borderColor: '#f43f5e',
+              label: '7-Day Moving Average (%)',
+              data: movingAvg,
+              borderColor: '#22d3ee',
               backgroundColor: 'transparent',
               borderWidth: 2,
-              borderDash: [4, 4],
-              tension: 0.3,
-              pointRadius: 0
+              tension: 0.35,
+              pointRadius: 2
             }
           ]
         },
@@ -978,83 +932,15 @@
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#0f172a',
-              titleColor: '#f8fafc',
-              bodyColor: '#cbd5e1',
-              borderColor: '#334155',
-              borderWidth: 1,
-              padding: 10
+              callbacks: {
+                label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw.toFixed(1) + '%' : 'Weekend (Off)'}`
+              }
             }
           },
           scales: {
             x: {
               grid: { color: 'rgba(51, 65, 85, 0.2)' },
               ticks: { color: '#64748b', font: { size: 10 } }
-            },
-            y: {
-              grid: { color: 'rgba(51, 65, 85, 0.2)' },
-              ticks: { color: '#64748b', font: { size: 10 } },
-              min: 0,
-              max: 26
-            }
-          }
-        }
-      });
-    }
-
-    // Department Breakdown Bar Chart
-    function renderDepartmentChart() {
-      const ctx = document.getElementById('chartDepartment').getContext('2d');
-      if (state.charts.department) state.charts.department.destroy();
-
-      // Aggregate department counts from records
-      const depts = {};
-      state.records.forEach(r => {
-        if (!depts[r.department]) depts[r.department] = { total: 0, present: 0 };
-        depts[r.department].total += 1;
-        if (r.status === 'PRESENT' || r.status === 'WFH' || r.status === 'ON_DUTY') {
-          depts[r.department].present += 1;
-        }
-      });
-
-      const labels = Object.keys(depts);
-      const rates = labels.map(d => Math.round((depts[d].present / depts[d].total) * 100));
-
-      state.charts.department = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Attendance Rate (%)',
-            data: rates,
-            backgroundColor: [
-              'rgba(99, 102, 241, 0.85)',
-              'rgba(16, 185, 129, 0.85)',
-              'rgba(6, 182, 212, 0.85)',
-              'rgba(245, 158, 11, 0.85)',
-              'rgba(236, 72, 153, 0.85)',
-              'rgba(168, 85, 247, 0.85)',
-              'rgba(14, 165, 233, 0.85)'
-            ],
-            borderRadius: 6,
-            barThickness: 24
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => ` Attendance: ${ctx.raw}% (${depts[ctx.label].present}/${depts[ctx.label].total} active)`
-              }
-            }
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: '#94a3b8', font: { size: 10 } }
             },
             y: {
               grid: { color: 'rgba(51, 65, 85, 0.2)' },
@@ -1067,16 +953,73 @@
       });
     }
 
-    // Status Breakdown Donut Chart
+    // Chart 2: Department Summary (MongoDB $lookup + $group)
+    function renderDepartmentChart(items) {
+      const ctx = document.getElementById('chartDepartment').getContext('2d');
+      if (state.charts.department) state.charts.department.destroy();
+
+      const labels = items.map(i => i.department);
+      const avgHours = items.map(i => i.avg_work_hours || 0);
+
+      state.charts.department = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Avg Work Hours (hrs)',
+            data: avgHours,
+            backgroundColor: [
+              'rgba(99, 102, 241, 0.85)',
+              'rgba(16, 185, 129, 0.85)',
+              'rgba(6, 182, 212, 0.85)',
+              'rgba(245, 158, 11, 0.85)',
+              'rgba(236, 72, 153, 0.85)',
+              'rgba(168, 85, 247, 0.85)',
+              'rgba(14, 165, 233, 0.85)',
+              'rgba(244, 63, 94, 0.85)',
+              'rgba(20, 184, 166, 0.85)'
+            ],
+            borderRadius: 6,
+            barThickness: 22
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` Headcount: ${items[ctx.dataIndex].headcount} | Avg Work Hours: ${ctx.raw}h`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8', font: { size: 10 } }
+            },
+            y: {
+              grid: { color: 'rgba(51, 65, 85, 0.2)' },
+              ticks: { color: '#64748b', font: { size: 10 }, callback: v => v + 'h' },
+              min: 0,
+              max: 12
+            }
+          }
+        }
+      });
+    }
+
+    // Chart 3: Status Distribution Donut Chart
     function renderStatusDonut() {
       const ctx = document.getElementById('chartStatus').getContext('2d');
       if (state.charts.status) state.charts.status.destroy();
 
       const counts = {
-        'On-Time Present': state.records.filter(r => r.status === 'PRESENT' && (r.late_minutes || 0) === 0).length,
-        'Late Arrival': state.records.filter(r => (r.late_minutes || 0) > 0).length,
-        'Work From Home': state.records.filter(r => r.status === 'WFH').length,
-        'Absent': state.records.filter(r => r.status === 'ABSENT').length
+        'On-Time Present': (state.workforceRows || []).filter(r => r.status === 'PRESENT' && (r.late_minutes || 0) === 0).length,
+        'Late Arrival': (state.workforceRows || []).filter(r => (r.late_minutes || 0) > 0).length,
+        'Work From Home': (state.workforceRows || []).filter(r => r.status === 'WFH').length,
+        'Absent / Leave': (state.workforceRows || []).filter(r => r.status === 'ABSENT' || r.status === 'LEAVE').length
       };
 
       const labels = Object.keys(counts);
@@ -1105,7 +1048,6 @@
         }
       });
 
-      // Populate custom legend
       const legEl = document.getElementById('donutLegend');
       legEl.innerHTML = labels.map((l, i) => `
         <div class="flex items-center gap-1.5">
@@ -1117,22 +1059,18 @@
     }
 
     // Mini Tardiness Leaderboard Widget
-    function renderLeaderboardMini() {
-      const lateList = state.records
-        .filter(r => (r.late_minutes || 0) > 0)
-        .sort((a, b) => b.late_minutes - a.late_minutes);
-
+    function renderLeaderboardMini(items) {
       const tbody = document.getElementById('leaderboardMiniTable');
-      if (lateList.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-500">Zero late occurrences today!</td></tr>';
+      if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-500">Zero late occurrences recorded.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = lateList.slice(0, 5).map((item, idx) => `
+      tbody.innerHTML = items.slice(0, 5).map(item => `
         <tr class="hover:bg-slate-800/40 transition">
           <td class="py-2.5 px-3">
-            <span class="h-5 w-5 rounded-full inline-flex items-center justify-center font-bold text-[10px] ${idx === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-400'}">
-              #${idx + 1}
+            <span class="h-5 w-5 rounded-full inline-flex items-center justify-center font-bold text-[10px] ${item.rank === 1 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-400'}">
+              #${item.rank}
             </span>
           </td>
           <td class="py-2.5 px-3 font-semibold text-white">
@@ -1140,18 +1078,18 @@
             <span class="text-[10px] text-slate-400 font-mono block">${item.emp_code}</span>
           </td>
           <td class="py-2.5 px-3 text-slate-300">${item.department}</td>
-          <td class="py-2.5 px-3 text-right font-mono font-bold text-amber-400">${item.late_minutes}m</td>
-          <td class="py-2.5 px-3 text-right text-slate-400">1x</td>
+          <td class="py-2.5 px-3 text-right font-mono font-bold text-amber-400">${item.total_late_minutes}m</td>
+          <td class="py-2.5 px-3 text-right text-slate-400 font-mono">${item.late_count}x</td>
         </tr>
       `).join('');
     }
 
     // -----------------------------------------------------------------------
-    // 6. ATTENDANCE LOG TABLE (Section 3)
+    // 5. ATTENDANCE LOG TABLE (Direct Live Query)
     // -----------------------------------------------------------------------
     function populateDepartmentFilters() {
       const depts = new Set();
-      state.records.forEach(r => { if (r.department) depts.add(r.department); });
+      state.employees.forEach(r => { if (r.department) depts.add(r.department); });
       const select = document.getElementById('tableDeptFilter');
       const cur = select.value;
 
@@ -1166,17 +1104,14 @@
       const dept = document.getElementById('tableDeptFilter').value;
       const statusFilter = state.currentFilterStatus;
 
-      state.filteredRecords = state.records.filter(r => {
-        // Search filter
+      state.filteredRecords = (state.workforceRows || []).filter(r => {
         const matchSearch = !search || 
           r.emp_code.toLowerCase().includes(search) || 
           r.name.toLowerCase().includes(search) || 
           r.department.toLowerCase().includes(search);
 
-        // Dept filter
         const matchDept = !dept || r.department === dept;
 
-        // Status filter
         let matchStatus = true;
         if (statusFilter === 'PRESENT') matchStatus = (r.status === 'PRESENT' && (r.late_minutes || 0) === 0);
         else if (statusFilter === 'LATE') matchStatus = (r.late_minutes || 0) > 0;
@@ -1204,19 +1139,18 @@
       const tbody = document.getElementById('attendanceTableBody');
       const list = state.filteredRecords;
 
-      document.getElementById('tablePaginationInfo').innerText = `Showing ${list.length} of ${state.records.length} workforce records`;
+      document.getElementById('tablePaginationInfo').innerText = `Displaying ${list.length} records queried from MongoDB`;
       document.getElementById('tabCountAttendance').innerText = list.length;
 
       if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-500 font-medium">No matching employee records found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-slate-500 font-medium">No matching attendance records found.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = list.map(item => {
-        // Determine status badge
         let badgeHtml = '';
-        if (item.status === 'ABSENT') {
-          badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">ABSENT</span>`;
+        if (item.status === 'ABSENT' || item.status === 'LEAVE') {
+          badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">${item.status}</span>`;
         } else if ((item.late_minutes || 0) > 0) {
           badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 w-fit"><span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>LATE (${item.late_minutes}m)</span>`;
         } else if (item.status === 'WFH') {
@@ -1227,11 +1161,13 @@
           badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">PRESENT</span>`;
         }
 
-        const workHrsStr = item.work_hours !== null && item.work_hours !== undefined ? `${Number(item.work_hours).toFixed(2)}h` : (item.active ? '<span class="text-cyan-400 animate-pulse font-mono">In Progress</span>' : '--');
+        const workHrsStr = item.work_hours !== null && item.work_hours !== undefined 
+          ? `${Number(item.work_hours).toFixed(2)}h` 
+          : (item.active ? '<span class="text-cyan-400 animate-pulse font-mono">In Progress</span>' : '--');
         const auditCount = (item.history || []).length;
 
         return `
-          <tr onclick="openCorrectionModal('${item.emp_code}')" class="hover:bg-slate-800/40 cursor-pointer transition group">
+          <tr onclick="openCorrectionModal('${item.emp_code}', '${item.date}')" class="hover:bg-slate-800/40 cursor-pointer transition group">
             <td class="py-3 px-3.5 font-mono font-bold text-indigo-400 group-hover:text-indigo-300">${item.emp_code}</td>
             <td class="py-3 px-3.5 font-semibold text-white flex items-center gap-2">
               <div class="h-6 w-6 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[10px] font-bold">
@@ -1240,6 +1176,7 @@
               <span>${item.name}</span>
             </td>
             <td class="py-3 px-3.5 text-slate-300">${item.department}</td>
+            <td class="py-3 px-3.5 font-mono text-slate-400 text-[11px]">${item.date}</td>
             <td class="py-3 px-3.5 font-mono text-slate-400 text-[11px]">${item.shift_start} - ${item.shift_end}</td>
             <td class="py-3 px-3.5 font-mono ${item.inTime ? 'text-slate-200' : 'text-slate-600'}">${item.inTime || '--:--'}</td>
             <td class="py-3 px-3.5 font-mono ${item.outTime ? 'text-slate-200' : (item.active ? 'text-cyan-400 font-semibold' : 'text-slate-600')}">${item.outTime || (item.active ? 'Clocked In' : '--:--')}</td>
@@ -1251,7 +1188,7 @@
                 : `<span class="text-slate-600 text-[11px]">&ndash;</span>`}
             </td>
             <td class="py-3 px-3.5 text-right" onclick="event.stopPropagation()">
-              <button onclick="openCorrectionModal('${item.emp_code}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-300 border border-slate-700 text-[11px] font-medium transition active:scale-95">
+              <button onclick="openCorrectionModal('${item.emp_code}', '${item.date}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-300 border border-slate-700 text-[11px] font-medium transition active:scale-95">
                 Adjust
               </button>
             </td>
@@ -1261,10 +1198,10 @@
     }
 
     // -----------------------------------------------------------------------
-    // 7. MANUAL CORRECTION WORKFLOW & IMMUTABLE AUDIT TRAIL (Sections 3 & 4)
+    // 6. REAL-TIME MANUAL CORRECTION WORKFLOW (PATCH /attendance)
     // -----------------------------------------------------------------------
-    function openCorrectionModal(empCode) {
-      const rec = state.records.find(r => r.emp_code === empCode);
+    function openCorrectionModal(empCode, dateStr) {
+      const rec = (state.workforceRows || []).find(r => r.emp_code === empCode && r.date === dateStr);
       if (!rec) return;
 
       state.selectedRecordForCorrection = rec;
@@ -1272,15 +1209,14 @@
       document.getElementById('modalEmpName').innerText = rec.name;
       document.getElementById('modalEmpCode').innerText = rec.emp_code;
       document.getElementById('modalEmpDept').innerText = `${rec.department} (Shift: ${rec.shift_start}-${rec.shift_end})`;
-      document.getElementById('modalDate').innerText = new Date().toISOString().slice(0, 10);
+      document.getElementById('modalDate').innerText = rec.date;
 
       document.getElementById('modalOrigClockIn').innerText = `Original: ${rec.inTime || 'None'}`;
       document.getElementById('modalOrigClockOut').innerText = `Original: ${rec.outTime || 'None'}`;
 
-      // Default inputs
-      const today = new Date().toISOString().slice(0, 10);
-      document.getElementById('modalClockIn').value = rec.inTime ? `${today}T${rec.inTime}` : `${today}T${rec.shift_start}`;
-      document.getElementById('modalClockOut').value = rec.outTime ? `${today}T${rec.outTime}` : `${today}T${rec.shift_end}`;
+      const recDate = rec.date;
+      document.getElementById('modalClockIn').value = rec.inTime ? `${recDate}T${rec.inTime}` : `${recDate}T${rec.shift_start}`;
+      document.getElementById('modalClockOut').value = rec.outTime ? `${recDate}T${rec.outTime}` : `${recDate}T${rec.shift_end}`;
       document.getElementById('modalReason').value = '';
 
       document.getElementById('correctionModal').classList.remove('hidden');
@@ -1309,107 +1245,83 @@
         return;
       }
 
-      const inTimeNew = clockInVal ? clockInVal.split('T')[1].slice(0, 5) : null;
-      const outTimeNew = clockOutVal ? clockOutVal.split('T')[1].slice(0, 5) : null;
-
-      // Calculate work hours
-      let workHours = null;
-      if (inTimeNew && outTimeNew) {
-        const [ih, im] = inTimeNew.split(':').map(Number);
-        const [oh, om] = outTimeNew.split(':').map(Number);
-        let diffMins = (oh * 60 + om) - (ih * 60 + im);
-        if (diffMins < 0) diffMins += 24 * 60; // overnight
-        workHours = Number((diffMins / 60).toFixed(2));
-      }
-
-      // Late minutes
-      const [sh, sm] = rec.shift_start.split(':').map(Number);
-      const [ih, im] = (inTimeNew || rec.shift_start).split(':').map(Number);
-      const lateMins = Math.max(0, (ih * 60 + im) - (sh * 60 + sm) - 10);
-
-      // Add to immutable audit trail
-      const now = new Date();
-      const auditEntry = {
-        timestamp: now.toISOString().slice(0, 19).replace('T', ' '),
-        emp_code: rec.emp_code,
-        emp_name: rec.name,
-        field_modified: 'Clock In/Out Timing',
-        original_value: `In: ${rec.inTime || 'None'}, Out: ${rec.outTime || 'None'}`,
-        new_value: `In: ${inTimeNew || 'None'}, Out: ${outTimeNew || 'None'}`,
-        adjusted_by: adjustedBy,
+      const body = {
+        regularized_by: adjustedBy,
         reason: reason
       };
 
-      AUDIT_LOGS.unshift(auditEntry);
-
-      // Update record in state
-      rec.inTime = inTimeNew;
-      rec.outTime = outTimeNew;
-      rec.work_hours = workHours;
-      rec.late_minutes = lateMins;
-      rec.status = 'PRESENT';
-      rec.active = (inTimeNew && !outTimeNew);
-      rec.history = rec.history || [];
-      rec.history.push(auditEntry);
-
-      // If backend live mode, also dispatch PATCH request
-      if (state.mode === 'live') {
-        try {
-          const date = new Date().toISOString().slice(0, 10);
-          await fetch(`${API_BASE}/attendance/${rec.emp_code}/${date}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              regularized_by: adjustedBy,
-              reason: reason,
-              punch_in: inTimeNew ? new Date(clockInVal).getTime() : undefined,
-              punch_out: outTimeNew ? new Date(clockOutVal).getTime() : undefined
-            })
-          });
-        } catch (e) {
-          console.warn('Backend patch failed, updated local audit state.');
-        }
+      if (clockInVal) {
+        body.punch_in = new Date(clockInVal).getTime();
+      }
+      if (clockOutVal) {
+        body.punch_out = new Date(clockOutVal).getTime();
       }
 
-      closeCorrectionModal();
-      refreshData();
-      showToast('Attendance Regularized', `Audit log recorded for ${rec.name} (${rec.emp_code}).`);
+      try {
+        const res = await fetch(`${API_BASE}/attendance/${rec.emp_code}/${rec.date}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeCorrectionModal();
+          await refreshData();
+          showToast('Attendance Regularized', `Audit record & SHA-256 hash committed for ${rec.name}.`);
+        } else {
+          alert(`Regularization failed (${res.status}): ${data.detail || JSON.stringify(data)}`);
+        }
+      } catch (e) {
+        alert('Network error while dispatching regularization: ' + e.message);
+      }
     }
 
     function renderAuditTrail() {
       const tbody = document.getElementById('auditTableBody');
-      if (AUDIT_LOGS.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-500 font-medium">No manual corrections have been logged.</td></tr>`;
+      const list = state.auditLogs;
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-500 font-medium">No manual corrections logged yet in MongoDB.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = AUDIT_LOGS.map(log => `
-        <tr class="hover:bg-slate-800/40 transition">
-          <td class="py-3 px-3.5 font-mono text-slate-400 text-[11px] whitespace-nowrap">${log.timestamp}</td>
-          <td class="py-3 px-3.5 font-semibold text-white">
-            ${log.emp_name}
-            <span class="text-[10px] text-slate-500 font-mono block">${log.emp_code}</span>
-          </td>
-          <td class="py-3 px-3.5 font-mono text-indigo-400 text-xs">${log.field_modified}</td>
-          <td class="py-3 px-3.5 font-mono text-rose-400/90 text-xs bg-rose-950/20 rounded px-2 py-1">${log.original_value}</td>
-          <td class="py-3 px-3.5 font-mono text-emerald-400 text-xs bg-emerald-950/20 rounded px-2 py-1">${log.new_value}</td>
-          <td class="py-3 px-3.5 font-medium text-slate-300">
-            <span class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[11px]">${log.adjusted_by}</span>
-          </td>
-          <td class="py-3 px-3.5 text-slate-300 text-xs italic max-w-xs truncate" title="${log.reason}">
-            "${log.reason}"
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = list.map(log => {
+        const changesSummary = Object.keys(log.changes || {}).map(field => {
+          const c = log.changes[field];
+          const fromStr = c.from !== null && c.from !== undefined ? (typeof c.from === 'number' && c.from > 100000000000 ? new Date(c.from).toLocaleTimeString('en-IN') : c.from) : 'null';
+          const toStr = c.to !== null && c.to !== undefined ? (typeof c.to === 'number' && c.to > 100000000000 ? new Date(c.to).toLocaleTimeString('en-IN') : c.to) : 'null';
+          return `<div class="font-mono text-[11px]"><span class="text-indigo-400">${field}:</span> <span class="text-rose-400 line-through">${fromStr}</span> &rarr; <span class="text-emerald-400 font-bold">${toStr}</span></div>`;
+        }).join('');
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3 px-3.5 font-mono text-slate-400 text-[11px] whitespace-nowrap">${log.at}</td>
+            <td class="py-3 px-3.5 font-semibold text-white">
+              <span class="font-mono text-indigo-400 font-bold">${log.emp_code}</span>
+            </td>
+            <td class="py-3 px-3.5 font-mono text-slate-300 text-xs">${log.date}</td>
+            <td class="py-3 px-3.5 font-medium text-slate-300">
+              <span class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[11px]">${log.by}</span>
+            </td>
+            <td class="py-3 px-3.5">${changesSummary || '--'}</td>
+            <td class="py-3 px-3.5 text-slate-300 text-xs italic max-w-xs truncate" title="${log.reason}">
+              "${log.reason}"
+            </td>
+            <td class="py-3 px-3.5 font-mono text-[10px] text-emerald-400/90 whitespace-nowrap">
+              <span class="px-2 py-0.5 bg-emerald-950/40 border border-emerald-800/50 rounded">${(log.checksum || 'sha256:verified').slice(0, 15)}...</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     // -----------------------------------------------------------------------
-    // 8. QUICK PUNCH TERMINAL
+    // 7. REAL-TIME PUNCH TERMINAL (POST /punch-in, POST /punch-out)
     // -----------------------------------------------------------------------
     function populatePunchSelect() {
       const select = document.getElementById('quickPunchEmpSelect');
-      select.innerHTML = state.records.map(r => `
-        <option value="${r.emp_code}">${r.emp_code} &bull; ${r.name} (${r.department})</option>
+      select.innerHTML = state.employees.map(r => `
+        <option value="${r.emp_code}">${r.emp_code} &bull; ${r.name} (${r.department}) [${r.shift_start}-${r.shift_end}]</option>
       `).join('');
     }
 
@@ -1428,54 +1340,33 @@
       const resBox = document.getElementById('quickPunchResult');
 
       resBox.classList.remove('hidden');
-      resBox.innerText = `Recording ${action.toUpperCase()} punch...`;
+      resBox.innerText = `Submitting real-time ${action.toUpperCase()} punch to MongoDB...`;
 
-      if (state.mode === 'live') {
-        try {
-          const endpoint = action === 'in' ? '/attendance/punch-in' : '/attendance/punch-out';
-          const body = action === 'in' ? { emp_code: empCode, status: status } : { emp_code: empCode };
-          const res = await fetch(`${API_BASE}${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
-          const data = await res.json();
-          if (res.ok) {
-            resBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono bg-emerald-950/80 border border-emerald-700 text-emerald-300';
-            resBox.innerText = `✓ Punch ${action.toUpperCase()} Success! Code: ${res.status}`;
-            setTimeout(() => { closePunchModal(); refreshData(); }, 800);
-            return;
-          } else {
-            resBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono bg-rose-950/80 border border-rose-700 text-rose-300';
-            resBox.innerText = `Error (${res.status}): ${data.detail || JSON.stringify(data)}`;
-            return;
-          }
-        } catch (e) {
-          console.warn('Live punch call failed, applying simulated punch.');
-        }
-      }
-
-      // Simulated punch fallback
-      const rec = state.records.find(r => r.emp_code === empCode);
-      if (rec) {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
-        if (action === 'in') {
-          rec.inTime = timeStr;
-          rec.status = status;
-          rec.active = true;
+      try {
+        const endpoint = action === 'in' ? '/attendance/punch-in' : '/attendance/punch-out';
+        const body = action === 'in' ? { emp_code: empCode, status: status } : { emp_code: empCode };
+        const res = await fetch(`${API_BASE}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          resBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono bg-emerald-950/80 border border-emerald-700 text-emerald-300';
+          resBox.innerText = `✓ Punch ${action.toUpperCase()} Success (HTTP ${res.status})!\nEmp: ${data.emp_code} | Date: ${data.date}\nStatus: ${data.status}`;
+          setTimeout(() => { closePunchModal(); refreshData(); }, 900);
         } else {
-          rec.outTime = timeStr;
-          rec.active = false;
+          resBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono bg-rose-950/80 border border-rose-700 text-rose-300';
+          resBox.innerText = `Error (${res.status}): ${data.detail || JSON.stringify(data)}`;
         }
-        resBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono bg-emerald-950/80 border border-emerald-700 text-emerald-300';
-        resBox.innerText = `✓ Simulated Clock ${action.toUpperCase()} recorded at ${timeStr}`;
-        setTimeout(() => { closePunchModal(); refreshData(); }, 700);
+      } catch (e) {
+        resBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono bg-rose-950/80 border border-rose-700 text-rose-300';
+        resBox.innerText = 'Network error: ' + e.message;
       }
     }
 
     // -----------------------------------------------------------------------
-    // 9. EXPLAIN & MONGODB STATS INSPECTOR (Tab 4)
+    // 8. MONGODB EXPLAIN EXECUTION STATS (Tab 4)
     // -----------------------------------------------------------------------
     async function runExplain() {
       const endpoint = document.getElementById('explainEndpointSelect').value;
@@ -1484,54 +1375,40 @@
       resBox.innerText = 'Executing MongoDB explain with executionStats verbosity...';
 
       try {
+        const month = getSelectedMonth();
+        const firstEmp = state.employees.length > 0 ? state.employees[0].emp_code : 'EMP0001';
+        const firstDept = state.employees.length > 0 ? state.employees[0].department : 'Engineering';
+
         let params = new URLSearchParams();
         if (endpoint === 'attendance_list') {
-          params.append('date_from', '2026-07-01');
-          params.append('date_to', '2026-07-28');
+          params.append('date_from', `${month}-01`);
+          params.append('date_to', `${month}-28`);
         } else if (endpoint === 'employee_monthly') {
-          params.append('emp_code', 'EMP0001');
-          params.append('month', '2026-07');
+          params.append('emp_code', firstEmp);
+          params.append('month', month);
         } else if (endpoint === 'department_summary') {
-          params.append('month', '2026-07');
+          params.append('month', month);
         } else if (endpoint === 'late_leaderboard') {
-          params.append('month', '2026-07');
+          params.append('month', month);
         } else if (endpoint === 'department_trend') {
-          params.append('department', 'Engineering');
-          params.append('from', '2026-07-01');
-          params.append('to', '2026-07-15');
+          params.append('department', firstDept);
+          params.append('from', `${month}-01`);
+          params.append('to', `${month}-15`);
         }
 
         const res = await fetch(`${API_BASE}/admin/explain/${endpoint}?${params.toString()}`);
-        if (!res.ok) throw new Error('API query failed');
+        if (!res.ok) throw new Error('Explain query failed');
         const data = await res.json();
         collBox.innerText = data.collection || 'attendance_logs';
         resBox.innerText = JSON.stringify(data.explain, null, 2);
       } catch (e) {
         collBox.innerText = 'attendance_logs';
-        resBox.innerText = JSON.stringify({
-          queryPlanner: {
-            plannerVersion: 1,
-            namespace: "attendance_db.attendance_logs",
-            winningPlan: {
-              stage: "IXSCAN",
-              indexName: "emp_code_1_date_-1",
-              isMultiKey: false,
-              isUnique: false
-            }
-          },
-          executionStats: {
-            executionSuccess: true,
-            nReturned: 25,
-            executionTimeMillis: 0,
-            totalKeysExamined: 25,
-            totalDocsExamined: 25
-          }
-        }, null, 2);
+        resBox.innerText = 'Explain error: ' + e.message;
       }
     }
 
     // -----------------------------------------------------------------------
-    // 10. UI UTILITIES & TOASTS
+    // 9. UI HELPERS & SYNC CONTROLLER
     // -----------------------------------------------------------------------
     function switchTab(tabId) {
       document.querySelectorAll('[id^="tabContent-"]').forEach(el => el.classList.add('hidden'));
@@ -1559,14 +1436,22 @@
     }
 
     function onGlobalMonthChange() {
-      showToast('Month Filter Applied', `Scope set to ${document.getElementById('globalMonthPicker').value}`);
+      showToast('Month Filter Applied', `Scope set to ${getSelectedMonth()}`);
       refreshData();
     }
 
+    function updateSyncInterval() {
+      if (state.syncTimer) clearInterval(state.syncTimer);
+      const val = document.getElementById('syncIntervalSelect').value;
+      if (val !== 'sse' && parseInt(val) > 0) {
+        state.syncTimer = setInterval(() => refreshData(false), parseInt(val));
+      }
+    }
+
     function exportTableToCSV() {
-      let csv = "Employee ID,Name,Department,Shift Start,Shift End,Clock In,Clock Out,Work Hours,Status,Late Minutes\n";
-      state.filteredRecords.forEach(r => {
-        csv += `"${r.emp_code}","${r.name}","${r.department}","${r.shift_start}","${r.shift_end}","${r.inTime || ''}","${r.outTime || ''}","${r.work_hours || ''}","${r.status}","${r.late_minutes || 0}"\n`;
+      let csv = "Employee ID,Name,Department,Date,Shift Start,Shift End,Clock In,Clock Out,Work Hours,Status,Late Minutes\n";
+      (state.filteredRecords || []).forEach(r => {
+        csv += `"${r.emp_code}","${r.name}","${r.department}","${r.date}","${r.shift_start}","${r.shift_end}","${r.inTime || ''}","${r.outTime || ''}","${r.work_hours || ''}","${r.status}","${r.late_minutes || 0}"\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);

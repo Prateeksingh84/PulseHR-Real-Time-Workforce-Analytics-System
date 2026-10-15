@@ -42,15 +42,21 @@ Set `MONGO_URI` and `MONGO_DB` (or define in a local `.env`):
 # MONGO_DB="attendance_db"
 ```
 
-### 3. Seed Sample Data (Optional)
+### 3. Seed Realistic Workforce & Attendance
 ```bash
-python sample_seed.py
+# Seed 25 employees across 9 departments with 225 real attendance logs and audit history:
+python seed_workforce.py
 ```
 
 ### 4. Run Application
 ```bash
 uvicorn app.main:app --port 8000
 ```
+- **Real-Time Admin Dashboard**: Open [http://localhost:8000/dashboard](http://localhost:8000/dashboard) (or root `/`) in any modern browser for live KPI cards, interactive biometric punch terminal, 30-day attendance trends, manual correction modal, and cryptographic audit log inspection.
+- **Interactive OpenAPI Documentation**: Open [http://localhost:8000/docs](http://localhost:8000/docs).
+- **Real-Time SSE Stream**: Connect to `GET /events` for instant server-sent push updates on employee creations, punches, and regularizations.
+- **Enterprise Security**: Production headers (`X-Frame-Options`, `X-Content-Type-Options`, `X-RateLimit-Limit`) and IP sliding-window rate limiting (300 req/min).
+
 Indexes are automatically created idempotently at application startup during the lifespan event.
 
 ## Repository Contents

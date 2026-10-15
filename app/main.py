@@ -4,9 +4,13 @@ Single-file implementation adhering to OpenAPI contract and business rules R1-R1
 Start with: uvicorn app.main:app --port 8000
 """
 
+import asyncio
 import calendar
+import hashlib
+import json
 import os
 import re
+import time
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -20,6 +24,9 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, field_validator
 from pymongo import ASCENDING, DESCENDING, MongoClient, ReturnDocument
 from pymongo.errors import DuplicateKeyError, PyMongoError
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response, StreamingResponse
 
 # Load .env without overriding environment variables set by grader
 load_dotenv(override=False)
@@ -85,6 +92,79 @@ app = FastAPI(
 
 # Enterprise payload compression for high-scale analytics responses
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Rate limiter & Production Security Headers (DoS defense & compliance)
+RATE_LIMIT_BUCKETS: dict[str, list[float]] = {}
+RATE_LIMIT_MAX = 300  # Generous threshold (300 req/min per IP)
+RATE_LIMIT_WINDOW = 60  # seconds
+
+
+class SecurityAndRateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        now = time.time()
+        path = request.url.path
+
+        # Apply rate limiting to operational endpoints (exempt dashboard, docs, and event streams)
+        if not (path.startswith("/dashboard") or path.startswith("/docs") or path.startswith("/openapi.json") or path == "/" or path.startswith("/events")):
+            timestamps = RATE_LIMIT_BUCKETS.get(client_ip, [])
+            timestamps = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
+            if len(timestamps) >= RATE_LIMIT_MAX:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many requests. Rate limit exceeded."},
+                    headers={"Retry-After": str(int(RATE_LIMIT_WINDOW - (now - timestamps[0])))}
+                )
+            timestamps.append(now)
+            RATE_LIMIT_BUCKETS[client_ip] = timestamps
+
+        response: Response = await call_next(request)
+
+        # Production Security Headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["X-RateLimit-Limit"] = str(RATE_LIMIT_MAX)
+        return response
+
+
+app.add_middleware(SecurityAndRateLimitMiddleware)
+
+# Real-Time Server-Sent Events (SSE) Subscribers
+SSE_SUBSCRIBERS: list[asyncio.Queue] = []
+
+
+def notify_realtime_subscribers(event_type: str, data: dict):
+    """Publish real-time notification to all connected SSE clients."""
+    msg = f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+    for q in list(SSE_SUBSCRIBERS):
+        try:
+            q.put_nowait(msg)
+        except Exception:
+            pass
+
+
+@app.get("/events", include_in_schema=False)
+async def realtime_events():
+    """Server-Sent Events endpoint pushing real-time attendance & audit updates."""
+    queue = asyncio.Queue()
+    SSE_SUBSCRIBERS.append(queue)
+
+    async def sse_stream():
+        try:
+            yield f"event: connected\ndata: {json.dumps({'status': 'live_connected', 'server_time': datetime.now(timezone.utc).isoformat()})}\n\n"
+            while True:
+                msg = await queue.get()
+                yield msg
+        except asyncio.CancelledError:
+            pass
+        finally:
+            if queue in SSE_SUBSCRIBERS:
+                SSE_SUBSCRIBERS.remove(queue)
+
+    return StreamingResponse(sse_stream(), media_type="text/event-stream")
+
 
 # In-memory LRU cache for employee shift configuration (high-frequency punch acceleration)
 SHIFT_CACHE: dict[str, tuple[str, str]] = {}
@@ -240,12 +320,15 @@ def format_history_entry(entry: dict) -> dict:
     if isinstance(at_val, datetime):
         at_val = datetime_to_epoch_ms(at_val)
 
-    return {
+    res = {
         "at": at_val,
         "by": entry.get("by"),
         "reason": entry.get("reason"),
         "changes": changes_formatted,
     }
+    if entry.get("checksum"):
+        res["checksum"] = entry.get("checksum")
+    return res
 
 
 def format_attendance_doc(doc: dict) -> dict:
@@ -420,6 +503,11 @@ def create_employee(body: EmployeeCreate):
     SHIFT_CACHE[doc["emp_code"]] = (doc["shift_start"], doc["shift_end"])
     doc.pop("_id", None)
     doc["created_at"] = datetime_to_epoch_ms(now_utc)
+    notify_realtime_subscribers("employee_created", {
+        "emp_code": doc["emp_code"],
+        "name": doc["name"],
+        "department": doc["department"],
+    })
     return doc
 
 
@@ -487,6 +575,12 @@ def punch_in(body: PunchInRequest):
     except DuplicateKeyError:
         raise HTTPException(status_code=409, detail="already punched in for this date")
 
+    notify_realtime_subscribers("punch_in", {
+        "emp_code": body.emp_code,
+        "date": att_date,
+        "status": body.status,
+        "late_minutes": late_mins,
+    })
     return format_attendance_doc(doc)
 
 
@@ -548,6 +642,12 @@ def punch_out(body: PunchOutRequest):
     if updated is None:
         raise HTTPException(status_code=409, detail="Record already punched out")
 
+    notify_realtime_subscribers("punch_out", {
+        "emp_code": body.emp_code,
+        "date": updated["date"],
+        "work_hours": work_hrs,
+        "overtime_minutes": ot_mins,
+    })
     return format_attendance_doc(updated)
 
 
@@ -689,11 +789,15 @@ def regularize_attendance(
         raise HTTPException(status_code=422, detail="Request changes nothing")
 
     history_now = truncate_to_seconds(datetime.now(timezone.utc))
+    audit_payload = f"{emp_code}:{date}:{history_now.isoformat()}:{body.regularized_by}:{body.reason}:{json.dumps(changes_db, default=str)}"
+    audit_hash = hashlib.sha256(audit_payload.encode()).hexdigest()
+
     new_entry = {
         "at": history_now,
         "by": body.regularized_by,
         "reason": body.reason,
         "changes": changes_db,
+        "checksum": f"sha256:{audit_hash}",
     }
 
     # Optimistic Concurrency Control on history array
@@ -726,6 +830,12 @@ def regularize_attendance(
     if res is None:
         raise HTTPException(status_code=409, detail="Concurrent modification conflict")
 
+    notify_realtime_subscribers("attendance_regularized", {
+        "emp_code": emp_code,
+        "date": date,
+        "regularized_by": body.regularized_by,
+        "reason": body.reason,
+    })
     return format_attendance_doc(res)
 
 
