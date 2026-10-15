@@ -694,8 +694,10 @@ def regularize_attendance(
 # Analytics Pipelines
 # --------------------------------------------------------------------------- #
 def build_employee_monthly_pipeline(emp_code: str, month: str) -> list[dict]:
+    y, m = map(int, month.split("-"))
+    last_day = calendar.monthrange(y, m)[1]
     start_date = f"{month}-01"
-    end_date = f"{month}-31"
+    end_date = f"{month}-{last_day:02d}"
     return [
         {
             "$match": {
@@ -818,8 +820,10 @@ def employee_monthly(
 
 
 def build_department_summary_pipeline(month: str, department: Optional[str] = None) -> list[dict]:
+    y, m = map(int, month.split("-"))
+    last_day = calendar.monthrange(y, m)[1]
     start_date = f"{month}-01"
-    end_date = f"{month}-31"
+    end_date = f"{month}-{last_day:02d}"
 
     match_filter = {"joined_on": {"$lte": end_date}}
     if department:
@@ -985,8 +989,10 @@ def department_summary(
 def build_leaderboard_pipeline(
     month: str, limit: int = 10, department: Optional[str] = None
 ) -> list[dict]:
+    y, m = map(int, month.split("-"))
+    last_day = calendar.monthrange(y, m)[1]
     start_date = f"{month}-01"
-    end_date = f"{month}-31"
+    end_date = f"{month}-{last_day:02d}"
 
     pipeline = [
         {
