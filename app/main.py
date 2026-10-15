@@ -34,12 +34,13 @@ load_dotenv(override=False)
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://127.0.0.1:27017")
 MONGO_DB = os.getenv("MONGO_DB", "attendance_db")
 
-# High-concurrency connection pool configuration
+# High-concurrency connection pool configuration with fast-failover resilience
 client: MongoClient = MongoClient(
     MONGO_URI,
     tz_aware=True,
     maxPoolSize=200,
-    minPoolSize=10,
+    serverSelectionTimeoutMS=5000,
+    connectTimeoutMS=5000,
     maxIdleTimeMS=45000,
     waitQueueTimeoutMS=5000,
     retryWrites=True,
